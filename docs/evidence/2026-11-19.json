@@ -1,0 +1,96 @@
+{
+  "date": "2026-11-19",
+  "record_type": "Curated summary of local hardware tests; raw device logs retained locally",
+  "board": {
+    "model": "W152D",
+    "soc": "S905L4",
+    "dt_id": "gxlx4_s905l4_w150d",
+    "kernel": "stock Linux 5.4.210 ARM64",
+    "boot_header_version": 3,
+    "vendor_boot_header_version": 3
+  },
+  "userspace": {
+    "release": "Armbian 26.11.0-trunk.136 bookworm",
+    "architecture": "arm64",
+    "glibc": "2.36",
+    "apt": "2.6.2",
+    "pid1": "experimental BusyBox /init; systemd is not PID 1"
+  },
+  "rootfs_source": {
+    "repository": "ghcr.io/armbian/os/rootfs-arm64-bookworm-minimal",
+    "manifest_digest": "sha256:ecf9ac2659c96e7cb6199e2bb92633710800b4630acefb83c0ec9f621313d10a",
+    "layer_digest": "sha256:5b6b3b6b70d41347ee54fab5c4b78117873828f280e50307e85de6bb1090cba8"
+  },
+  "observed_results": {
+    "independent_armbian_boots": 2,
+    "native_pid1": true,
+    "ethernet": true,
+    "ssh_public_key_authentication": true,
+    "ssh_host_key_pinned": true,
+    "pty": true,
+    "sftp_round_trip_in_ram": true,
+    "automatic_android_return_both_runs": true,
+    "android_boot_completed": true,
+    "boot_id_changed": true,
+    "slot_unchanged": true,
+    "observed_slot": "_b",
+    "boot_partition_hashes_match_stock": true,
+    "kexec_loaded_after_return": 0,
+    "persistent_partitions_mounted_in_native_linux": false,
+    "rootfs_tmpfs_limit_mib": 640,
+    "available_memory_kib_at_15_seconds": 1433724,
+    "raw_log_paths_omitted": true
+  },
+  "input_stock_sha256": {
+    "boot_a.img": "f311f302b7e8acdf38724b37853ea4b1a50c5a35c3669702de0b3e531a069e24",
+    "vendor_boot_a.img": "30ee8e023377bf4deebb6e7b06e6090f2e0aa9f6a03744e1aefe4d8c544bc571"
+  },
+  "final_boot_partition_sha256": {
+    "boot_a": "f311f302b7e8acdf38724b37853ea4b1a50c5a35c3669702de0b3e531a069e24",
+    "boot_b": "f311f302b7e8acdf38724b37853ea4b1a50c5a35c3669702de0b3e531a069e24",
+    "vendor_boot_a": "30ee8e023377bf4deebb6e7b06e6090f2e0aa9f6a03744e1aefe4d8c544bc571",
+    "vendor_boot_b": "30ee8e023377bf4deebb6e7b06e6090f2e0aa9f6a03744e1aefe4d8c544bc571"
+  },
+  "local_test_artifact_sha256": {
+    "staged_initramfs": "159bcb589335bac59469ab4c29956eb7e35adee3df075c5189fbed49f3f743b4",
+    "rootfs_tar": "69b9b00081096d3a9aa528a8cec024ea7b72272ccc2cf439297fbfadc5934396"
+  },
+  "artifact_note": "Historical artifact hashes only. Archives are not distributed; fresh per-build keys and tokens change their hashes.",
+  "kernel_config_observations": {
+    "CONFIG_FHANDLE": "not enabled / absent",
+    "CONFIG_SYSVIPC": "not enabled / absent",
+    "CONFIG_DEVTMPFS_MOUNT": "not enabled / absent",
+    "CONFIG_USER_NS": "not enabled / absent",
+    "CONFIG_CGROUP_DEVICE": "not enabled / absent",
+    "CONFIG_AUTOFS4_FS": "not enabled / absent",
+    "CONFIG_STMMAC_ETH": "m",
+    "CONFIG_DWMAC_MESON": "m",
+    "CONFIG_MODVERSIONS": "y"
+  },
+  "runtime_syscall_observation": {
+    "name_to_handle_at_arm64_errno": 38,
+    "meaning": "ENOSYS"
+  },
+  "stock_network_module_order": [
+    "mdio_mux.ko",
+    "aml_mdio_g12a.ko",
+    "pps_core.ko",
+    "ptp.ko",
+    "phylink.ko",
+    "stmmac.ko",
+    "stmmac-platform.ko",
+    "aml_mailbox.ko",
+    "dwmac-meson8b.ko",
+    "meson-gxl.ko"
+  ],
+  "known_limits": [
+    "RAM only; no persistent installation",
+    "stock 5.4.210 kernel",
+    "custom BusyBox PID 1; systemd boot untested",
+    "Wi-Fi/display/hardware video untested",
+    "direct full-rootfs initramfs path not validated",
+    "USB direct boot and BootROM USB rescue not tested",
+    "bootstrap process and old mount cleanup still experimental"
+  ],
+  "source_export_note": "ADB and firmware input paths were parameterized for this repository. This exported source has offline verification, not a new full hardware run."
+}
