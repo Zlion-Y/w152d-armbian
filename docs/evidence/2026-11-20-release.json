@@ -1,0 +1,56 @@
+{
+  "version": "v0.2.0-preview",
+  "release_type": "experimental-prerelease",
+  "date": "2026-11-20",
+  "board": "W152D / GXLX4 BT203",
+  "kernel_required": "matching stock ARM64 5.4.210, extracted locally",
+  "userspace": "official Armbian Bookworm ARM64 cache plus Debian main packages",
+  "pid1": "Debian ARM64 static BusyBox; systemd is not PID 1",
+  "base_manifest_digest": "sha256:ecf9ac2659c96e7cb6199e2bb92633710800b4630acefb83c0ec9f621313d10a",
+  "base_layer_digest": "sha256:5b6b3b6b70d41347ee54fab5c4b78117873828f280e50307e85de6bb1090cba8",
+  "image_bytes": 2147483648,
+  "raw_image_sha256": "3398c0c9bedfc10a4ecaf75be14e3b97d78909e5ef8e6ebdf7777ccd5a33530e",
+  "fresh_filesystem": true,
+  "device_credentials_included": false,
+  "shared_ssh_host_private_key": false,
+  "shared_authorized_key": false,
+  "wifi_configuration_included": false,
+  "stock_kernel_dtb_modules_firmware_included": false,
+  "provisioning": "user public key and optional WPA2 network; unique host key generated on first boot",
+  "filesystem_validation": "e2fsck 1.47.0 -fn passed",
+  "artifact_test": {
+    "method": "native U-Boot booti of a copy; stock Image/DTB; new release initramfs/rootfs",
+    "unique_host_key_generated": true,
+    "firstboot_import": true,
+    "firstboot_idempotence": true,
+    "root_on_usb_loop15": true,
+    "arm64_userspace": true,
+    "wifi_5ghz_wpa2_dhcp": true,
+    "ssh_host_key_pinned_via_ttl": true,
+    "http_status": true,
+    "https_certificate_verified_200": true,
+    "chrony_running": true,
+    "dhcp_renewal_daemon_running": true,
+    "ssh_network_address_redacted": true
+  },
+  "limits": [
+    "HDMI/desktop, hardware video acceleration and Bluetooth untested",
+    "systemd PID 1 and containers unverified",
+    "One W152D firmware/hardware combination tested",
+    "Public clean image tested with one-time U-Boot commands; persistent automatic boot validated on the same board with prior device image"
+  ],
+  "assets": {
+    "packages.tsv": {
+      "bytes": 8001,
+      "sha256": "0897ba35e38c441a8dfe0b7315496700b138305ed1f765b7f7e5bdf893dea7c1"
+    },
+    "w152d-rootfs-bookworm-v0.2.0-preview.ext4.gz": {
+      "bytes": 213678397,
+      "sha256": "a57baa5bccf01c6f54d72968e063a45ea4b80fc6fc7c3c426ed8ff70b8ae1489"
+    },
+    "w152d-usb-bootstrap-v0.2.0-preview.zip": {
+      "bytes": 1001163,
+      "sha256": "9a93be0560803e17448347b78b56df925a09d0cbe76a2ebb74f19336ca4c26c9"
+    }
+  }
+}

@@ -22,3 +22,11 @@ Android 阶段只是 root ADB 与 kexec 的入口。chroot 预检共用运行中
 RAM 启动前保留 Android、槽位和引导镜像。执行 kexec 前同步并冻结设备当时的七个可写 ext4 挂载点，脚本有失败解冻和用户态后备任务。该列表与本机挂载布局绑定，换固件后必须复核。
 
 Linux init 中的约 180 秒计时可以处理进入 init 后的多数用户态故障；它覆盖不了早期内核挂死。手动断电恢复和 BootROM 下载恢复是不同层级，不能相互替代。
+
+## 当前 USB 架构（2026-11-20 更新）
+
+上述 RAM 路径保留为早期实验记录。当前启动链为原厂 U-Boot → GPIOAO_11 供电 → USB FAT32 的 aml_autoscript → 安全地址加载 Image/DTB/initramfs → 扫描 USB_ID → loop15 挂 ext4 → switch_root → BusyBox PID 1。
+
+新发布的 initramfs 使用 Debian ARM64 静态 BusyBox，USB/ext4 驱动由原厂内核内建。原厂网络模块不在 initramfs 或发布镜像中；首次启动由使用者提供同机原厂备份提取文件。持久目录中使用 OpenSSH、wpa_supplicant 和 chrony，状态页使用持续监听的 BusyBox httpd。
+
+根镜像不提供预置私钥、公钥或 Wi-Fi 密码。首次启动配置成功后再加载网络，SSH 主机密钥当场生成，密码认证始终关闭。PID 1 仍是 BusyBox；这条路径不证明 systemd/udev、容器或图形桌面兼容。

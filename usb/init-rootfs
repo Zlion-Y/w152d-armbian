@@ -1,0 +1,48 @@
+#!/usr/local/bin/busybox sh
+# Experimental persistent Armbian userland, stock kernel, BusyBox PID 1.
+umask 022
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+BB=/usr/local/bin/busybox
+for p in /proc /sys /dev /run /tmp /dev/pts; do $BB mkdir -p "$p"; done
+$BB mountpoint -q /proc || $BB mount -t proc proc /proc
+$BB mountpoint -q /sys || $BB mount -t sysfs sysfs /sys
+$BB mountpoint -q /dev || $BB mount -t devtmpfs devtmpfs /dev
+$BB mountpoint -q /run || $BB mount -t tmpfs -o mode=0755,size=32m tmpfs /run
+$BB mountpoint -q /tmp || $BB mount -t tmpfs -o mode=1777,size=32m tmpfs /tmp
+$BB mountpoint -q /dev/pts || $BB mount -t devpts -o mode=0620,ptmxmode=0666 devpts /dev/pts
+if [ -x /usr/local/libexec/w152d-time ]; then
+    /usr/local/libexec/w152d-time restore
+fi
+exec >/run/w152d-boot.log 2>&1
+/usr/local/sbin/w152d-firstboot || echo 'First-boot setup incomplete; supply your public key and stock files on USB'
+. /probe.conf
+PROBE_PHASE=ARMBIAN_USB_PERSISTENT
+export BB PROBE_TOKEN PROBE_PHASE PORT
+echo 'W152D persistent USB rootfs; stock 5.4.210 kernel; BusyBox PID 1'
+if [ "${W152D_NETWORK_READY:-0}" != 1 ]; then
+    while read -r module; do
+        [ -n "$module" ] || continue
+        $BB insmod "/lib/modules/$module" || echo "Module load failed: $module"
+    done < /modules.order
+    $BB ip link set lo up
+    if [ -e /sys/class/net/eth0 ]; then
+        $BB ip link set eth0 up
+        $BB udhcpc -f -i eth0 -p /run/w152d-eth-dhcp.pid -s /usr/local/libexec/w152d-udhcpc >/run/w152d-ethernet.log 2>&1 &
+    fi
+fi
+$BB mkdir -p /run/sshd /var/log
+$BB cp /run/w152d-bootstrap.log /var/log/w152d-bootstrap.log 2>/dev/null
+if /usr/sbin/sshd -t -f /etc/ssh/sshd_config_w152d; then
+    /usr/sbin/sshd -D -e -f /etc/ssh/sshd_config_w152d >/run/w152d-sshd.log 2>&1 &
+    echo 'SSH starting: root, port 2222, authorized key only'
+else
+    echo 'SSH configuration failed; inspect status page and log'
+fi
+if [ -x /usr/local/sbin/w152d-wifi ] && [ ! -e /etc/w152d-wifi.disabled ]; then
+    /usr/local/sbin/w152d-wifi supervise >/run/w152d-wifi-service.log 2>&1 &
+fi
+echo 'No automatic return timer. Remove USB before the next power-on to return to Android.'
+while :; do
+    $BB sh /status_service.sh
+    $BB sleep 2
+done

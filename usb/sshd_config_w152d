@@ -1,0 +1,17 @@
+Port 2222
+ListenAddress 0.0.0.0
+HostKey /etc/ssh/ssh_host_ed25519_key_w152d
+PidFile /run/sshd-w152d.pid
+AuthorizedKeysFile .ssh/authorized_keys
+PubkeyAuthentication yes
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitEmptyPasswords no
+PermitRootLogin prohibit-password
+UsePAM no
+UseDNS no
+AllowUsers root
+AllowTcpForwarding no
+X11Forwarding no
+PrintMotd no
+Subsystem sftp internal-sftp

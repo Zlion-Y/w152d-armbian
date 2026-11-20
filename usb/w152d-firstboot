@@ -1,0 +1,46 @@
+#!/usr/local/bin/busybox sh
+set -eu
+umask 077
+BASE=/media/w152d-usb/${W152D_USB_DIR:-w152d}
+CONFIG=$BASE/config
+STOCK=$BASE/stock
+STATE=/var/lib/w152d
+mkdir -p "$STATE" /etc/wpa_supplicant /root/.ssh /vendor/firmware /vendor/etc /usr/lib/modules/w152d-wifi
+chmod 700 /root/.ssh
+if [ ! -e "$STATE/provisioned" ]; then
+    test -s "$CONFIG/authorized_keys" || { echo 'Missing w152d/config/authorized_keys'; exit 1; }
+    cp "$CONFIG/authorized_keys" /root/.ssh/authorized_keys
+    chmod 600 /root/.ssh/authorized_keys
+    if [ -s "$CONFIG/wpa_supplicant.conf" ]; then
+        cp "$CONFIG/wpa_supplicant.conf" /etc/wpa_supplicant/w152d.conf
+        chmod 600 /etc/wpa_supplicant/w152d.conf
+    fi
+    test -d "$STOCK/modules"
+    cp "$STOCK/modules/"*.ko /usr/lib/modules/
+    for name in wifi_comm uwe5621_bsp_sdio sprdwl_ng; do
+        test ! -f "$STOCK/modules/$name.ko" || cp "$STOCK/modules/$name.ko" /usr/lib/modules/w152d-wifi/
+    done
+    cp "$STOCK/modules.order" /modules.order
+    for name in wcnmodem.bin regulatory.db regulatory.db.p7s; do
+        if [ -f "$STOCK/firmware/$name" ]; then
+            cp "$STOCK/firmware/$name" /vendor/firmware/
+            cp "$STOCK/firmware/$name" /usr/lib/firmware/
+        fi
+    done
+    test ! -f "$STOCK/wifi_board_config.ini" || cp "$STOCK/wifi_board_config.ini" /vendor/etc/
+    # Unlock key authentication with an unknown random password hash; password
+    # authentication remains disabled. The temporary password is never saved.
+    hashed=$(openssl rand -base64 48 | openssl passwd -6 -stdin)
+    awk -F: -v OFS=: -v hashed="$hashed" '$1=="root" {$2=hashed} {print}' /etc/shadow > /etc/shadow.w152d
+    chmod 640 /etc/shadow.w152d
+    chown root:shadow /etc/shadow.w152d
+    mv /etc/shadow.w152d /etc/shadow
+    unset hashed
+    touch "$STATE/provisioned"
+fi
+if [ ! -s /etc/ssh/ssh_host_ed25519_key_w152d ]; then
+    ssh-keygen -q -t ed25519 -N '' -f /etc/ssh/ssh_host_ed25519_key_w152d
+fi
+chmod 600 /etc/ssh/ssh_host_ed25519_key_w152d
+cp /etc/ssh/ssh_host_ed25519_key_w152d.pub "$CONFIG/ssh_host_ed25519_key.pub"
+echo 'First-boot configuration ready; SSH uses your public key'

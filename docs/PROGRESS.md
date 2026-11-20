@@ -35,3 +35,9 @@
 - [ ] Wi-Fi、显示、视频硬解与其他外设。
 
 本仓库保存脱敏摘要；完整原始日志留在本地。没有可公开下载的板级镜像，也没有验证过 A/B 自动回退。
+
+## 2026-11-20：USB 与无线阶段完成
+
+后续已从 U-Boot 直接启动 U 盘 rootfs，验证文件持久化、缺少入口时 Android 回退、5 GHz 无线 DHCP、SSH/SFTP、DNS、HTTP 与 HTTPS。最终板级修正为 GPIOAO_11 供电使能和安全内核加载地址 0x01080000；未采用研究阶段 U-Boot 指令补丁。
+
+当前推荐文档为 README.md、USB_BOOT_AND_RECOVERY.md、BUILD.md 和 VALIDATION.md。原始硬件测试镜像为设备专用；发布用户空间从官方缓存新建 ext4，首次启动再导入使用者自己的公钥、Wi-Fi 和同机原厂文件。发布附件与 Git 源码分开管理，根镜像不写入 Git 历史。

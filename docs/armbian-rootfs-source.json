@@ -1,0 +1,17 @@
+{
+  "repository": "armbian/os/rootfs-arm64-bookworm-minimal",
+  "manifest_digest": "sha256:ecf9ac2659c96e7cb6199e2bb92633710800b4630acefb83c0ec9f621313d10a",
+  "package_page": "https://github.com/armbian/os/pkgs/container/os%2Frootfs-arm64-bookworm-minimal",
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "layers": [
+    {
+      "mediaType": "application/vnd.unknown.layer.v1+tar",
+      "digest": "sha256:5b6b3b6b70d41347ee54fab5c4b78117873828f280e50307e85de6bb1090cba8",
+      "size": 105513960,
+      "annotations": {
+        "org.opencontainers.image.title": "rootfs-arm64-bookworm-minimal_202611-b5e2f4953371-H6eccde-B29aff7.tar.zst"
+      }
+    }
+  ],
+  "verified": true
+}

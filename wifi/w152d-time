@@ -1,0 +1,20 @@
+#!/usr/local/bin/busybox sh
+umask 022
+BB=/usr/local/libexec/w152d/busybox
+STAMP=/var/lib/w152d/last-good-utc
+case "${1:-notify}" in
+    restore)
+        [ -f "$STAMP" ] || exit 0
+        read -r saved <"$STAMP"
+        case "$saved" in ''|*[!0-9]*) exit 1;; esac
+        now=$("$BB" date -u +%s)
+        [ "$saved" -le "$now" ] || "$BB" date -u -s "@$saved"
+        ;;
+    *)
+        now=$("$BB" date -u +%s)
+        [ "$now" -ge 1577836800 ] || exit 0
+        mkdir -p /var/lib/w152d
+        echo "$now" >"$STAMP.new"
+        mv "$STAMP.new" "$STAMP"
+        ;;
+esac

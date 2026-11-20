@@ -1,0 +1,61 @@
+#!/usr/local/bin/busybox sh
+set -eu
+umask 077
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+BB=/usr/local/bin/busybox
+MOD=/usr/lib/modules/w152d-wifi
+case "${1:-start}" in
+    load)
+        for module in wifi_comm uwe5621_bsp_sdio sprdwl_ng; do
+            [ -d "/sys/module/$module" ] || "$BB" insmod "$MOD/$module.ko"
+        done
+        # Same debug control used by the stock Android wifilog_ctl.sh.
+        if ! "$BB" mountpoint -q /sys/kernel/debug; then
+            "$BB" mount -t debugfs -o mode=0700 debugfs /sys/kernel/debug
+            mounted_debugfs=1
+        else mounted_debugfs=0; fi
+        if [ -w /sys/kernel/debug/sprdwl_debug/log_level ]; then
+            echo debug_level=0 >/sys/kernel/debug/sprdwl_debug/log_level
+        fi
+        [ "$mounted_debugfs" = 0 ] || "$BB" umount /sys/kernel/debug
+        for rf in /sys/class/rfkill/rfkill*; do
+            [ -f "$rf/name" ] || continue
+            case "$(cat "$rf/name")" in phy*) echo 1 >"$rf/state";;esac
+        done
+        ip link set wlan0 up
+        ;;
+    scan)
+        "$0" load
+        iw dev wlan0 scan
+        ;;
+    start)
+        "$0" load
+        mkdir -p /run/wpa_supplicant
+        if [ ! -s /run/w152d-wpa.pid ] || ! kill -0 "$(cat /run/w152d-wpa.pid)" 2>/dev/null; then
+            wpa_supplicant -B -D nl80211 -i wlan0 -c /etc/wpa_supplicant/w152d.conf \
+                -P /run/w152d-wpa.pid -f /run/w152d-wpa.log
+        fi
+        count=0
+        while [ "$count" -lt 35 ]; do
+            if wpa_cli -i wlan0 status | grep -q '^wpa_state=COMPLETED$'; then
+                exec /usr/local/libexec/w152d/busybox udhcpc -f -n -t 5 -T 4 -i wlan0 \
+                    -p /run/w152d-udhcpc.pid -s /usr/local/libexec/w152d-udhcpc
+            fi
+            count=$((count+1)); sleep 1
+        done
+        echo 'Wi-Fi association timed out; see /run/w152d-wpa.log' >&2
+        exit 1
+        ;;
+    status)
+        iw dev wlan0 link
+        ip -4 addr show dev wlan0
+        wpa_cli -i wlan0 status
+        ;;
+    supervise)
+        while :; do
+            "$0" start || echo 'Wi-Fi retry in 10 seconds'
+            sleep 10
+        done
+        ;;
+    *) echo 'Usage: w152d-wifi load|scan|start|status|supervise' >&2; exit 2 ;;
+esac

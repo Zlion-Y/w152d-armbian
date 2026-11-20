@@ -25,3 +25,16 @@ __pycache__/
 *.key
 .env
 .env.*
+/outputs/
+/release-assets/
+/releases/*
+!/releases/README.md
+*.ext4
+*.tar
+*.xz
+*.deb
+*.partial
+*.owner-fix.tmp
+WifiConfigStore.xml
+wpa_supplicant.conf
+/w152d/config/

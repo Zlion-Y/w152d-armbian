@@ -1,0 +1,39 @@
+#!/usr/local/bin/busybox sh
+BB=/usr/local/bin/busybox
+IP=/usr/sbin/ip
+case "$1" in
+    deconfig) "$IP" addr flush dev "$interface" ;;
+    bound|renew)
+        prefix=0
+        save_ifs=$IFS; IFS=.
+        for octet in ${subnet:-255.255.255.0}; do
+            case "$octet" in
+                255) bits=8;;254) bits=7;;252) bits=6;;248) bits=5;;
+                240) bits=4;;224) bits=3;;192) bits=2;;128) bits=1;;0) bits=0;;
+                *) exit 1;;
+            esac
+            prefix=$((prefix+bits))
+        done
+        IFS=$save_ifs
+        "$IP" addr replace "$ip/$prefix" dev "$interface"
+        if [ "$(cat /sys/class/net/eth0/carrier 2>/dev/null)" = 0 ]; then
+            "$IP" route del default dev eth0 2>/dev/null || :
+            "$IP" addr flush dev eth0
+        fi
+        for gateway in $router; do
+            "$IP" route replace default via "$gateway" dev "$interface" metric 100
+            break
+        done
+        # Keep DNS in RAM; the persistent /etc/resolv.conf points here.
+        : >/run/w152d-resolv.conf
+        for server in $dns; do echo "nameserver $server" >>/run/w152d-resolv.conf; done
+        chmod 644 /run/w152d-resolv.conf
+        echo "WIFI_DHCP_BOUND=$ip/$prefix"
+        if [ ! -s /run/w152d-ntp.pid ] || ! kill -0 "$(cat /run/w152d-ntp.pid)" 2>/dev/null; then
+            mkdir -p /run/chrony
+            chown _chrony:_chrony /run/chrony
+            chronyd -n -f /etc/chrony/chrony-w152d.conf >/run/w152d-ntp.log 2>&1 &
+            echo "$!" >/run/w152d-ntp.pid
+        fi
+        ;;
+esac

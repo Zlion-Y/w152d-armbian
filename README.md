@@ -1,80 +1,83 @@
-# W152D / S905L4 Armbian 适配记录
+# W152D / S905L4 USB Linux
 
-目标：先使用原厂内核运行 Armbian，再验证持久根文件系统与“插 U 盘启动 Linux、拔盘回 Android”。这是板级适配研究记录，目前没有可刷机发行版，也不代表 Armbian 官方支持 W152D。
+在 W152D 上使用原厂 ARM64 Linux 5.4.210 内核运行 Armbian Bookworm 用户空间。已完成 U-Boot 直接读取 U 盘、ext4 持久根目录、5 GHz Wi-Fi、DHCP、密钥 SSH/SFTP、HTTP 状态页及 HTTPS。PID 1 为自定义 BusyBox，不代表 Armbian 官方支持此板卡，也不是桌面发行版。
 
-**2026-11-19：已通过 kexec 两次独立启动官方 Armbian Bookworm ARM64 用户空间，密钥 SSH、PTY 交互终端和 SFTP 均通过；两次均自动返回 Android，boot/vendor_boot 两槽摘要未变。**
+## 下载与准备
 
-| 项目 | 当前状态 |
+下载 [Releases](https://github.com/Zlion-Y/w152d-armbian/releases) 中同一版本的：
+
+- `w152d-rootfs-bookworm-v0.2.0-preview.ext4.gz`：新建的 2 GiB 用户空间文件系统镜像，已移除共享登录凭据。
+- `w152d-usb-bootstrap-v0.2.0-preview.zip`：U-Boot 脚本、initramfs、识别标记和第三方许可说明。
+- `SHA256SUMS`、`release-manifest.json`：附件校验和、来源与验证范围。
+
+另外需要**这台盒子自己的** `boot_a.img`、`vendor_boot_a.img`、原厂 `vendor` ext4 镜像。内核、DTB、模块和无线固件由工具在本机提取，不放进发布附件。不可拿其他型号的文件代替。
+
+准备已有 FAT32 分区的 U 盘。工具只创建文件，不格式化或重排分区；已有 `w152d/rootfs.ext4` 时会拒绝覆盖。建议至少 3 GiB 空闲空间。Python 3.10+ 和系统 OpenSSH 即可完成制盘；激活启动顺序另需 Node.js 22.15+ 与 root ADB。
+
+```powershell
+# 若没有自己的密钥，在本机生成；私钥不要上传仓库。
+ssh-keygen -t ed25519 -f .\outputs\keys\client_ed25519
+
+python tools/prepare_usb.py --usb F:\ `
+  --rootfs .\downloads\w152d-rootfs-bookworm-v0.2.0-preview.ext4.gz `
+  --bootstrap .\downloads\w152d-usb-bootstrap-v0.2.0-preview.zip `
+  --checksums .\downloads\SHA256SUMS `
+  --stock-dir C:\stock-backup `
+  --vendor-image C:\stock-backup\vendor_a.img `
+  --public-key .\outputs\keys\client_ed25519.pub `
+  --ssid YOUR_WIFI_SSID
+```
+
+工具交互读取 Wi-Fi 密码，不显示密码。配置只写入 U 盘的 `w152d/config/`；不要提交或分享该目录。暂只配置实测的 WPA2-PSK 路径，省略 `--ssid` 可仅配置公钥并使用有线网络。
+
+首次启动会导入你的公钥和原厂文件，并生成这份安装独有的 SSH 主机密钥。**镜像没有通用 SSH 密码。** 主机公钥会写回 U 盘 `w152d/config/ssh_host_ed25519_key.pub`，可用 `ssh-keygen -lf` 核对首次连接指纹。
+
+## 启动顺序
+
+已设置过本项目 USB 优先环境的设备可直接启动。新设备先完成一次性 U-Boot 验证，再按 [启动与恢复说明](docs/USB_BOOT_AND_RECOVERY.md) 备份并激活。先用默认的只读/生成补丁模式审阅：
+
+```powershell
+python tools/activate_usb_adb.py --serial 192.0.2.18:5555 --output outputs/env-backup-001
+```
+
+实际写入需重新指定一个空备份目录并加 `--execute`。只修改两份 64 KiB 环境中的 `bootcmd`，保留各副本的其他变量和分区尾部，整份备份、CRC 与写回哈希验证均保留。不要将别人设备的 env 镜像写入自己的盒子。
+
+USB3 插口保持原位：U-Boot 先拉高 `GPIOAO_11 / CURRENT_LIMIT1`，以 480 Mb/s 读引导文件；Linux 接管后同口恢复 USB3 5000 Mb/s。当前安全内核地址为 `0x01080000`；`0x05080000` 落在 secmon 保留区域，不能使用。
+
+## 登录与状态页
+
+DHCP 地址由路由器分配，下列 `192.0.2.18` 仅为文档示例。Linux 使用 SSH，Android ADB 是另一条连接通道。
+
+```powershell
+ssh -i .\outputs\keys\client_ed25519 -p 2222 root@192.0.2.18
+```
+
+状态页为 `http://设备地址:18080/`，使用持续监听的 BusyBox httpd，支持浏览器并发连接；`/status.txt` 提供纯文本诊断。Windows OpenSSH 如拒绝私钥权限，在 PowerShell 7 运行：
+
+```powershell
+.\tools\Fix-SSHKeyPermissions.ps1 -Path .\outputs\keys\client_ed25519
+```
+
+## 已知范围
+
+| 项目 | 结果 |
 |---|---|
-| SoC / 原厂 DT 标识 | S905L4 / `gxlx4_s905l4_w150d` |
-| 内核 | 原厂 ARM64 Linux 5.4.210 |
-| 用户空间 | Armbian 26.11.0-trunk.136 Bookworm / Debian 12 ARM64 |
-| PID 1 | 自定义 BusyBox `/init`；systemd 尚未作为 PID 1 启动 |
-| 根文件系统 | RAM 中的 tmpfs；未持久化 |
-| 网络 | 原厂模块驱动的有线网口已通过；Wi-Fi 未验证 |
-| 远程操作 | 专用密钥 SSH，端口 2222；PTY、SFTP 通过 |
-| USB 直接引导 | 未实测；原厂环境中存在 USB 恢复加载入口 |
-| 启动分区刷写 | 本轮未改写 boot、vendor_boot、bootloader 或槽位 |
+| 测试板卡 | W152D / GXLX4 BT203，原厂 U-Boot 2019.01（2026-01-29 构建） |
+| USB 直接启动与持久化 | 通过 |
+| Android 回退 | 缺少引导入口时已实测；Linux 接管后的故障需断电拔盘恢复 |
+| Wi-Fi | 原厂配套驱动，5 GHz / WPA2 / 802.11ac 已通过 |
+| SSH、SFTP、DNS、HTTP、HTTPS | 通过 |
+| systemd / Docker / 桌面 / HDMI / 硬解 / 蓝牙 | 未验证或未启用 |
+| 发布镜像 | 从官方缓存新建，首次启动配置逻辑单独记录在发布验收中 |
 
-```text
-Android root ADB
-    → kexec → 原厂内核 + 小型网络引导环境
-    → 将 Armbian 解包到 tmpfs → switch_root
-    → Armbian ARM64 用户空间 + 密钥 SSH
-    → 约 180 秒计时重启 → Android
-```
+[完整验证范围](docs/VALIDATION.md) · [构建说明](docs/BUILD.md) · [隐私与附件边界](docs/PRIVACY_AND_ARTIFACTS.md) · [第三方来源](docs/THIRD_PARTY.md)
 
-## 记录与路线
+## 代码与历史
 
-- [实验进展与失败记录](docs/PROGRESS.md)
-- [启动架构与内核限制](docs/ARCHITECTURE.md)
-- [USB 优先启动与救援验证计划](docs/USB_BOOT_AND_RECOVERY.md)
-- [脱敏后的实测摘要与输入哈希](docs/evidence/2026-11-19.json)
+- `usb/`：直接 USB 启动、持久根目录和首次启动配置。
+- `wifi/`：无线加载、DHCP、时间恢复与联网校时。
+- `tools/`：制盘、原厂文件提取、环境备份/修改、镜像构建与 ACL 修复。
+- `src/status_service.sh`：持续监听状态服务。
+- 旧的 `build_probe.py`、RAM/kexec 脚本及 [历史进展](docs/PROGRESS.md) 保留早期研究，不是当前推荐的日常启动入口。
 
-优先事项：验证 USB 存储与持久根文件系统；确认本机 BootROM USB 下载救援入口；验证一次性 U-Boot USB 引导；最后才考虑保存 USB 优先启动环境。systemd/udev、长期运行、Wi-Fi、显示和硬解仍需后续验证。
-
-## 源码与本地复现
-
-仓库保存实际实验脚本的整理版本。ADB、原厂输入和 OpenSSL 路径已参数化，保留 `--execute` 才进行内核交接的保护。整理后的源码完成本地语法与离线构建校验，硬件全链路证据来自整理前的本机实验；不把路径参数化本身算作新的硬件实测。
-
-需要 Python 3.10+、ADB、OpenSSL，以及自行备份的同机原厂镜像。原厂固件、下载缓存、根文件系统归档、私钥和原始设备日志均不上传。
-
-```powershell
-python -m pip install -r requirements.txt
-
-# 仅作格式示例：替换为自己的原厂备份目录、ADB、设备地址和网关。
-$env:W152D_STOCK_DIR = 'C:\path\to\stock-backup'
-$env:ADB = 'C:\path\to\platform-tools\adb.exe'
-python build_probe.py
-python build_network_probe.py --ip 192.0.2.16 --gateway 192.0.2.1 --return-after 90
-
-# 从固定 digest 下载官方 rootfs 缓存，校验并解压为 tar。
-python fetch_armbian_rootfs.py --download
-python prepare_armbian_rootfs.py --serial '192.0.2.16:5555'
-python build_staged_armbian.py
-```
-
-`192.0.2.0/24` 是文档示例地址，必须换成盒子实际地址。网络探针暂时使用从 Android 核对到的以太网地址作为静态地址，不能直接套到其他局域网。
-
-使用 `device_checks.py --serial ...` 采集运行时设备树，再用以下命令进行**仅加载、卸载的预检**：
-
-```powershell
-python run_ram_probe.py --serial '192.0.2.16:5555' `
-  --runtime-dtb 'evidence\device_时间戳\runtime.dtb' --probe-dir armbian-staged
-```
-
-实际内核交接需另加 `--execute`，并提前在另一终端启动 `verify_armbian_ssh.py --native --seconds 220`。根文件系统内的计时只在 `/init` 执行后有效，早期内核卡死仍可能需要断电。执行脚本内冻结的挂载点列表来自本机，换固件或挂载布局后需要重新核对。
-
-`wait_android_recovery.py --serial ...` 检查返回 Android；`record_armbian_validation.py --serial ...` 将当前启动包与本地验证记录绑定，并重新核对引导分区哈希。其他脚本用途见其 `--help` 或文件头。
-
-## 仓库内容边界
-
-这里只提交自建脚本、文档和经过筛选的结果摘要。原厂内核、BusyBox、模块与设备树由本机固件提取，各自遵循原有许可和分发条件；仓库不打包分发这些二进制。生成的 rootfs 含专用 SSH 主机私钥，不能当作通用镜像公开发布。
-
-## 上游来源
-
-- [Armbian 官方 rootfs 缓存](https://github.com/armbian/os/pkgs/container/os%2Frootfs-arm64-bookworm-minimal)
-- [AOSP vendor_boot 格式](https://source.android.com/docs/core/architecture/partitions/vendor-boot-partitions)
-- [systemd v252 内核要求](https://github.com/systemd/systemd/blob/v252/README)
-- [U-Boot 晶晨启动流程](https://docs.u-boot.org/en/latest/board/amlogic/boot-flow.html)
-- [ophub 多启动激活脚本，仅作对照](https://github.com/ophub/amlogic-s9xxx-armbian/blob/main/build-armbian/armbian-files/platform-files/amlogic/bootfs/aml_autoscript.cmd)
+原始工作区、设备私钥、无线凭据、完整 env 备份和未脱敏串口日志不属于仓库发布内容。
