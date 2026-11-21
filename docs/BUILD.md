@@ -2,12 +2,22 @@
 
 ## 内核与 initramfs
 
-构建基线为 Linux 6.12.0，实测工具链为 AArch64 GCC 15.2.0 / Binutils 2.46。[DTS](../mainline/dts/meson-gxlx4-w152d-integrated-probe.dts)、[内核配置](../mainline/kernel.config)和[板级补丁](../mainline/patches)属于同一板型适配。当前仍需要已适配的 GXLX4 时钟、Amlogic USB CRG、对应头文件及 UWE5622 构建接线。供体参考见 [Khadas common_drivers](https://github.com/khadas/common_drivers/tree/3a11a86a02e759fc57fc79410215f7c0c3a0d8e0) 和 [Armbian UWE5622](https://github.com/armbian/uwe5622/tree/d2d6bc45c5ef9cefdd53e6c51cec3ba948b84972)。
+构建基线为 [kernel.org 的 Linux 6.12.0](https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.tar.xz)，实测工具链为 AArch64 GCC 15.2.0 / Binutils 2.46。需要 Bash、Git、GNU make、交叉工具链、C 编译器、bc、bison、flex、OpenSSL 与 ELF 开发头文件。脚本校验源码归档的 SHA-256，并在新目录解包、应用补丁、安装板级设备树和驱动。
 
-- 板级 USB 时钟和 PHY 源码放入内核的 `drivers/clk/` 并编入内核。
-- LED 使用 `drivers/gpio/w152d-ao-gpio.c`，将[该驱动](../mainline/drivers/w152d-ao-gpio.c)复制到内核树并应用 [Kbuild 补丁](../mainline/patches/w152d-ao-gpio-kbuild.patch)，配置启用 `GPIO_W152D_AO` 和 `LEDS_GPIO`。
-- 从同一内核树构建 ARM64 的 `Image` 及 xHCI、SMSC、Meson PHY、MDIO mux、rfkill、cfg80211 和 sprdwl_ng 模块。
-- 对可交付的内核，在 WCN 接管补丁之后应用 [外置无线固件补丁](../mainline/patches/w152d-wcn-external-firmware.patch)，从 Image 去掉供体内嵌的固件数组。
+```sh
+mkdir -p outputs
+JOBS=8 bash tools/build_w152d_kernel.sh /path/to/linux-6.12.tar.xz outputs/w152d-linux
+```
+
+[构建补丁序列](../mainline/linux-6.12)按文件名顺序应用，包含从实测内核树整理出的 GXLX4 时钟、Amlogic USB CRG、UWE5622 和板级接线。[单项补丁](../mainline/patches)用于独立审阅，其中的改动已经包含在构建序列中。供体参考见 [Khadas common_drivers](https://github.com/khadas/common_drivers/tree/3a11a86a02e759fc57fc79410215f7c0c3a0d8e0) 和 [Armbian UWE5622](https://github.com/armbian/uwe5622/tree/d2d6bc45c5ef9cefdd53e6c51cec3ba948b84972)。
+
+构建产物位于 `outputs/w152d-linux/build`，含 ARM64 `Image`、W152D 集成 DTB 及启动所需七个模块。无线驱动运行时加载外置固件。6.12.0 基线在新解包的源码和空构建目录中完成编译，生成的 DTB 与 Release 实测件一致。
+
+### ophub 候选基线
+
+同一个脚本也接受 [unifreq/linux-6.12.y 固定提交 `237b076a69ad`](https://github.com/unifreq/linux-6.12.y/commit/237b076a69ad793cad84c3997645275696bbe678) 的 [GitHub 源码归档](https://codeload.github.com/unifreq/linux-6.12.y/tar.gz/237b076a69ad793cad84c3997645275696bbe678)。归档对应 6.12.118，构建版本为 `6.12.118-w152d`。额外的[移植补丁](../mainline/unifreq-6.12.118)合并三个 Meson 时钟文件和一个 RMII 驱动文件中的差异，保留 S4/C3 的 PLL `frac_max` 设置，并修复候选基线中通用时钟门控宏的缺参。
+
+该候选基线已编译 Image、DTB 和七个启动模块，也通过了本项目的 USB 打包。当前用户空间沿用本项目的 Armbian Bookworm。此版还需实机验收，ophub 板型接入和其内核包格式另行处理。
 
 打包需要 Linux 上的 Bash、Python 3、C 编译器、binutils、dtc、kmod、gzip，以及一份 ARM64 静态 BusyBox。给第三个参数传 `-` 可生成不含外置无线固件的 initramfs。需要无线时，把以下文件放到刷好的 U 盘 `w152d/firmware/`，或用该目录作为参数生成仅在本地使用的 initramfs。
 
@@ -19,12 +29,12 @@
 
 ```sh
 mkdir -p outputs
-bash tools/build_mainline_artifacts.sh /path/to/w152d-linux /path/to/busybox - outputs/mainline-build
+bash tools/build_mainline_artifacts.sh outputs/w152d-linux/build /path/to/busybox - outputs/mainline-build outputs/w152d-linux/linux-6.12
 python tools/package_mainline_usb.py --artifacts outputs/mainline-build --output outputs/mainline-usb
 (cd outputs/mainline-usb && sha256sum -c SHA256SUMS)
 ```
 
-构建脚本用内核头文件预处理并编译 DTS，从同一内核树取出匹配模块，打包为 gzip initramfs。U 盘打包器验证 SHA-256 和各件的装载窗口，再生成带长度和 CRC 的 U-Boot 脚本。
+构建脚本用内核头文件预处理并编译 DTS，从同一内核构建目录取出匹配模块，打包为 gzip initramfs。第五个参数指定源码目录，使用树内构建时可省略。U 盘打包器验证 SHA-256 和各件的装载窗口，再生成带长度和 CRC 的 U-Boot 脚本。
 
 ## Armbian 用户空间
 

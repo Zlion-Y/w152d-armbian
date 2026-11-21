@@ -6,6 +6,7 @@ kernel=$(realpath "${1:?compiled W152D kernel tree required}")
 busybox=$(realpath "${2:?static ARM64 BusyBox required}")
 firmware=${3:?firmware directory or - required}
 output=$(realpath -m "${4:?new output directory required}")
+source=$(realpath "${5:-$kernel}")
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 test ! -e "$output"
 work=$(mktemp -d)
@@ -36,7 +37,7 @@ for flag in GPIO_W152D_AO GPIO_REGMAP LEDS_GPIO; do
     grep -qx "CONFIG_${flag}=y" "$kernel/.config"
 done
 
-cpp -E -nostdinc -undef -D__DTS__ -x assembler-with-cpp -I "$kernel/include" \
+cpp -E -nostdinc -undef -D__DTS__ -x assembler-with-cpp -I "$source/include" \
     "$repo/mainline/dts/meson-gxlx4-w152d-integrated-probe.dts" -o "$work/board.dts"
 dtc -I dts -O dtb -o "$work/integrated-probe.dtb" "$work/board.dts"
 
@@ -67,7 +68,7 @@ for module in "${modules[@]}"; do
     cp "$kernel/$module" "$work/sources/"
 done
 
-cc "$kernel/usr/gen_init_cpio.c" -o "$work/gen_init_cpio"
+cc "$source/usr/gen_init_cpio.c" -o "$work/gen_init_cpio"
 (
     cd "$work"
     cat >initramfs.list <<'EOF'

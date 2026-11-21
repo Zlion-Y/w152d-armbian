@@ -17,6 +17,7 @@ jobs:
       - name: Shell syntax
         run: |
           bash -n tools/build_mainline_artifacts.sh
+          bash -n tools/build_w152d_kernel.sh
           for path in tools/build_rootfs.sh usb/init-rootfs usb/w152d-firstboot usb/w152d-leds usb/w152d-grow-rootfs usb/mainline/init usb/mainline/w152d_usb_root wifi/w152d-* src/status_service.sh; do
             sh -n "$path"
           done
