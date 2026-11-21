@@ -24,7 +24,8 @@ sync
 
 - [入口脚本](../usb/mainline/w152d-usb-dispatch.cmd) 先消费 `boot.arm`，再读取主线 `boot.scr`。跳过或加载失败时交还 U-Boot。主线脚本装载 Image、initramfs、DTB 并核对字节数，打开 USB3 PHY 电源域和 Wi-Fi 供电，配置 SDIO 引脚后执行 `booti`。
 - [initramfs](../usb/mainline/init) 加载匹配的 USB、有线和无线模块，然后[接管 U 盘根文件系统](../usb/mainline/w152d_usb_root)。它只探测实测 USB VID:PID 的第一分区，并核对 `w152d/USB_ID`。主线根文件系统的 PID 1 在 SSH 开始监听且存在 `continuous` 时，重新设置下次启动标记。
-- 前面板绿色电源灯对应 GPIOAO_4，红色电源灯对应 GPIOAO_5。绿色网络灯对应 GPIOAO_9，由 `netdev` 触发器绑定 `eth0`；布线连通时常亮，收发时闪烁。红色网络灯对应 GPIOAO_7，默认为灭。可通过 `/sys/class/leds/green:lan/device_name`、`link`、`rx` 和 `tx` 核对触发器设置。
+- 电源灯在 U-Boot 开始加载主线时为红色，内核接管后保持红色。Armbian 的 SSH 服务开始监听 2222 端口后，电源灯切为常亮绿色。绿灯对应 GPIOAO_4，红灯对应 GPIOAO_5。
+- 网络灯按 `eth0` 的有线链路状态切换。链路连通时常亮绿色，断开时常亮红色。每秒检查一次；Wi-Fi 和公网可达性独立于有线链路状态。绿灯对应 GPIOAO_9，红灯对应 GPIOAO_7。可通过 `/sys/class/leds/` 中各灯的 `brightness` 核对状态。
 
 ## 实机记录
 
@@ -39,6 +40,6 @@ sync
 | USB3 | 实测启动盘以 5 Gb/s 协商，读写通过 |
 | 三个 USB2 外口 | 单只测试盘轮换插入，逐口以 480 Mb/s 枚举并读取验证 |
 
-新增的 LED 内核和 DTB 已在现有主线 U 盘系统上验证。有线接口停用时绿色网络灯的亮度状态降为 0，恢复后回到 1。有线网关 ping 25/25，收发期间采样确认亮度在 0 和 1 间切换。软件重启后，电源绿灯默认开启，网络灯自动恢复到 `eth0` 的 link/rx/tx 触发模式。全新主线制盘流程已离线打包，待从新建根文件系统重新验收实机启动。
+双色灯逻辑已在现有主线 U 盘系统上验证。软件重启时，串口记录 U-Boot 设置红灯，内核日志记录 SSH 就绪后切绿。有线接口停用和恢复时分别读回红亮与绿亮；连续 15 次网关 ping 全部返回，期间采样确认绿灯常亮。全新主线制盘流程已离线打包，待从新建根文件系统重新验收实机启动。
 
 要停用 U 盘入口，可在关闭设备后拔盘，或把 `boot.arm` 写成 `STOP` 并删除 `continuous`。详见[启动恢复](USB_BOOT_AND_RECOVERY.md)。

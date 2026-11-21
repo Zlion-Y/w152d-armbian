@@ -18,7 +18,7 @@ exec >/run/w152d-boot.log 2>&1
 export BB
 echo 'W152D persistent USB rootfs'
 $BB ip link set lo up
-/usr/local/libexec/w152d-leds
+/usr/local/libexec/w152d-leds >/run/w152d-leds.log 2>&1 &
 if [ -e /sys/class/net/eth0 ]; then
     $BB ip link set eth0 up
     $BB udhcpc -f -i eth0 -p /run/w152d-eth-dhcp.pid -s /usr/local/libexec/w152d-udhcpc >/run/w152d-ethernet.log 2>&1 &

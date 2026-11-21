@@ -1,4 +1,9 @@
 echo W152D USB mainline boot
+# Green LEDs are active high; red LEDs are active low.
+gpio clear GPIOAO_4
+gpio clear GPIOAO_5
+gpio clear GPIOAO_9
+gpio clear GPIOAO_7
 setenv w152d_old_args "${bootargs}"
 setenv w152d_old_fdt_high "${fdt_high}"
 setenv w152d_old_initrd_high "${initrd_high}"

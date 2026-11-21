@@ -29,7 +29,7 @@ EOF
     test -s regulatory.db
     test -s regulatory.db.p7s
 )
-for flag in GPIO_W152D_AO GPIO_REGMAP LEDS_GPIO LEDS_TRIGGER_NETDEV; do
+for flag in GPIO_W152D_AO GPIO_REGMAP LEDS_GPIO; do
     grep -qx "CONFIG_${flag}=y" "$kernel/.config"
 done
 

@@ -18,26 +18,25 @@
 		led-power-green {
 			label = "green:power";
 			gpios = <&ao_gpio 4 GPIO_ACTIVE_HIGH>;
-			default-state = "on";
+			default-state = "off";
 		};
 
 		led-power-red {
 			label = "red:power";
 			gpios = <&ao_gpio 5 GPIO_ACTIVE_LOW>;
-			default-state = "off";
+			default-state = "on";
 		};
 
 		led-network-green {
 			label = "green:lan";
 			gpios = <&ao_gpio 9 GPIO_ACTIVE_HIGH>;
 			default-state = "off";
-			linux,default-trigger = "netdev";
 		};
 
 		led-network-red {
 			label = "red:lan";
 			gpios = <&ao_gpio 7 GPIO_ACTIVE_LOW>;
-			default-state = "off";
+			default-state = "on";
 		};
 	};
 };

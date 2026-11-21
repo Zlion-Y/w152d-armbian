@@ -1,8 +1,48 @@
 #!/usr/local/bin/busybox sh
 set -eu
-led=/sys/class/leds/green:lan
-[ -w "$led/device_name" ] || exit 0
-printf 'eth0\n' >"$led/device_name"
-printf '1\n' >"$led/link"
-printf '1\n' >"$led/rx"
-printf '1\n' >"$led/tx"
+
+leds=/sys/class/leds
+for led in green:power red:power green:lan red:lan; do
+    [ -w "$leds/$led/brightness" ] || exit 0
+done
+for led in green:power red:power green:lan red:lan; do
+    if [ -w "$leds/$led/trigger" ]; then
+        printf 'none\n' >"$leds/$led/trigger"
+    fi
+done
+
+red() {
+    printf '0\n' >"$leds/green:$1/brightness"
+    printf '1\n' >"$leds/red:$1/brightness"
+}
+
+green() {
+    printf '0\n' >"$leds/red:$1/brightness"
+    printf '1\n' >"$leds/green:$1/brightness"
+}
+
+red power
+echo '<6>W152D: red power LED while starting' >/dev/kmsg
+power_ready=no
+previous_carrier=
+while :; do
+    if [ "$power_ready" = no ] && ss -H -ltn 'sport = :2222' | grep -q ':2222'; then
+        green power
+        power_ready=yes
+        echo '<6>W152D: green power LED after SSH is ready' >/dev/kmsg
+    fi
+
+    carrier=0
+    if read -r value 2>/dev/null </sys/class/net/eth0/carrier && [ "$value" = 1 ]; then
+        carrier=1
+    fi
+    if [ "$carrier" != "$previous_carrier" ]; then
+        if [ "$carrier" = 1 ]; then
+            green lan
+        else
+            red lan
+        fi
+        previous_carrier=$carrier
+    fi
+    sleep 1
+done
