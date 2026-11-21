@@ -1,6 +1,6 @@
 """Package public first-boot files; this tool never reads local credentials."""
 from pathlib import Path
-import argparse,io,tarfile,json,hashlib
+import argparse,io,tarfile,hashlib
 ROOT=Path(__file__).resolve().parents[1]
 FILES={
  'init':'usb/init-rootfs',
@@ -9,6 +9,7 @@ FILES={
  'usr/local/sbin/w152d-wifi':'wifi/w152d-wifi',
  'usr/local/libexec/w152d-udhcpc':'wifi/w152d-udhcpc',
  'usr/local/libexec/w152d-time':'wifi/w152d-time',
+ 'usr/local/libexec/w152d-leds':'usb/w152d-leds',
  'etc/ssh/sshd_config_w152d':'usb/sshd_config_w152d',
  'etc/chrony/chrony-w152d.conf':'usb/chrony-w152d.conf',
 }

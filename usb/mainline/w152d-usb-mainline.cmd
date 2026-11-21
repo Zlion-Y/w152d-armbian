@@ -18,7 +18,7 @@ if fatload usb 0:1 0x08600000 w152d/mainline/Image; then
                                 gpio set GPIOX_6
                                 setenv fdt_high 0xffffffffffffffff
                                 setenv initrd_high 0xffffffffffffffff
-                                setenv bootargs 'earlycon=meson,0xfe07a000,921600 console=ttyS0,921600 keep_bootcon loglevel=7 oops=panic panic=12 rdinit=/init w152d_direct_usb=1 w152d_usb_root=1'
+                                setenv bootargs 'earlycon=meson,0xfe07a000,921600 console=ttyS0,921600 keep_bootcon loglevel=7 oops=panic panic=12 rdinit=/init'
                                 booti 0x08600000 0x0b800000:${w152d_ml_rd_size} 0x0d000000
                             fi
                         fi

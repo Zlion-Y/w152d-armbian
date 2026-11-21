@@ -3,15 +3,11 @@
 BB=${BB:-/bin/busybox}
 STATUS_DIR=${STATUS_DIR:-/run}
 PORT=${PORT:-18080}
-PROBE_PHASE=${PROBE_PHASE:-NATIVE_RAM_INIT}
-PROBE_TOKEN=${PROBE_TOKEN:-unset}
 WEBROOT=$STATUS_DIR/w152d-http
 $BB mkdir -p "$WEBROOT"
 
 write_status() {
     {
-        echo "W152D_PROBE_TOKEN=$PROBE_TOKEN"
-        echo "phase=$PROBE_PHASE"
         echo 'pid1_command='
         $BB tr '\000' ' ' < /proc/1/cmdline
         echo
@@ -25,7 +21,7 @@ write_status() {
         $BB ip -4 addr
         echo 'memory='
         $BB head -5 /proc/meminfo
-        for log in /run/w152d-bootstrap.log /run/w152d-boot.log /run/w152d-sshd.log; do
+        for log in /run/w152d-boot.log /run/w152d-sshd.log; do
             if [ -f "$log" ]; then
                 echo "log=$log"
                 $BB tail -20 "$log"
@@ -64,15 +60,4 @@ if [ -n "$HTTPD_BB" ]; then
         write_status
     done
     wait "$http_pid"
-else
-    # Compatibility for earlier RAM-only probes without the full HTTP applet.
-    while :; do
-        write_status
-        length=$($BB wc -c < "$STATUS_DIR/w152d-status.txt")
-        {
-            printf 'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %s\r\nConnection: close\r\n\r\n' "$length"
-            $BB cat "$STATUS_DIR/w152d-status.txt"
-        } | $BB nc -l -p "$PORT" -w 3 > /dev/null
-        $BB sleep 1
-    done
 fi

@@ -1,0 +1,8 @@
+#!/usr/local/bin/busybox sh
+set -eu
+led=/sys/class/leds/green:lan
+[ -w "$led/device_name" ] || exit 0
+printf 'eth0\n' >"$led/device_name"
+printf '1\n' >"$led/link"
+printf '1\n' >"$led/rx"
+printf '1\n' >"$led/tx"

@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: GPL-2.0+
+#include <dt-bindings/gpio/gpio.h>
+
+&{/soc} {
+	ao_gpio: gpio@fe004180 {
+		compatible = "amlogic,w152d-ao-gpio", "syscon";
+		reg = <0x0 0xfe004180 0x0 0xc>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		gpio-reserved-ranges = <0 4>, <6 1>, <8 1>, <10 2>;
+	};
+};
+
+&{/} {
+	leds {
+		compatible = "gpio-leds";
+
+		led-power-green {
+			label = "green:power";
+			gpios = <&ao_gpio 4 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		led-power-red {
+			label = "red:power";
+			gpios = <&ao_gpio 5 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		led-network-green {
+			label = "green:lan";
+			gpios = <&ao_gpio 9 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+			linux,default-trigger = "netdev";
+		};
+
+		led-network-red {
+			label = "red:lan";
+			gpios = <&ao_gpio 7 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+	};
+};

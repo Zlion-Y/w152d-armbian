@@ -25,7 +25,7 @@
 +		u32 fuse = readl(priv->w152d_trim);
 +		u32 analog = 0xa9860000;
 +
-+		/* The stock enet_type=10 internal PHY sequence. */
++		/* W152D internal PHY analog initialization. */
 +		writel(0x74043, priv->regs + ETH_PHY_CNTL1);
 +		mdelay(10);
 +		writel(0x260, priv->regs + ETH_PHY_CNTL2);
@@ -72,7 +72,7 @@
 +
 +static int w152d_g12a_phy_config_init(struct phy_device *phydev)
 +{
-+	/* PHY test-register sequence from the stock W152D enet_type=10 path. */
++	/* W152D internal PHY test-register sequence. */
 +	static const struct { u8 reg; u16 value; } sequence[] = {
 +		{ 20, 0 }, { 20, 0x400 }, { 20, 0 }, { 20, 0x400 },
 +		{ 23, 11 }, { 20, 0x4418 },

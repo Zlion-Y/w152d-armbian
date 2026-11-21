@@ -9,7 +9,4 @@ if fatload usb 0:1 0x030c0000 w152d/mainline/boot.arm; then
         fi
     fi
 fi
-echo W152D USB stock fallback
-if fatload usb 0:1 0x030a0000 w152d/aml_autoscript.usb-stock.bak; then
-    source 0x030a0000
-fi
+echo W152D mainline USB boot skipped or returned

@@ -1,77 +1,54 @@
 #!/bin/busybox sh
-
 set -eu
 export PATH=/bin
 
 failed() {
-    echo '<3>W152D-USB-ROOT: root handoff failed, restarting to stock' >/dev/kmsg
+    echo '<3>W152D: USB root handoff failed; restarting' >/dev/kmsg
     sync
     reboot -f
 }
 trap failed EXIT
 
-mkdir -p /usb /newroot /run
-boot_device=
-for part in /sys/class/block/sd*1; do
-    node=/dev/${part##*/}
-    [ -b "$node" ] || continue
-    parent=$(readlink -f "$part")
-    while [ -n "$parent" ] && [ ! -r "$parent/idVendor" ]; do parent=${parent%/*}; done
-    [ -n "$parent" ] && [ "$(cat "$parent/idVendor"):$(cat "$parent/idProduct")" = 0781:55a3 ] || continue
-    mount -t vfat -o rw,noatime "$node" /usb || continue
-    if [ "$(tr -d '\r\n' </usb/w152d/USB_ID)" = W152D_ARMBIAN_USB_DIRECT_V1 ] && \
-        [ -s /usb/w152d/rootfs.ext4 ]; then
-        boot_device=$node
-        break
-    fi
-    umount /usb
-done
-[ -n "$boot_device" ]
-loop_device=$(losetup -f)
-losetup "$loop_device" /usb/w152d/rootfs.ext4
-mount -t ext4 -o rw,noatime "$loop_device" /newroot
-[ -x /newroot/init ] && [ -x /newroot/usr/sbin/sshd ] && [ -f /newroot/etc/w152d-udisk ]
-
-mount -t tmpfs -o mode=0755,size=32m tmpfs /run
-mkdir -p /run/w152d-mainline /newroot/media/w152d-usb
-sed -e 's/stock 5\.4\.210 kernel/mainline 6.12 kernel/' \
-    -e '/^    echo .SSH starting:/a\
-    /run/w152d-mainline/rearm >/run/w152d-mainline/rearm.log 2>&1 &' \
-    /newroot/init >/run/w152d-mainline/armbian-init
-grep -Fq '/run/w152d-mainline/rearm' /run/w152d-mainline/armbian-init
-chmod 0755 /run/w152d-mainline/armbian-init
-if [ -f /newroot/usr/local/sbin/w152d-wifi ]; then
-    # Retain the existing association and DHCP supervisor with the loaded 6.12 modules.
-    sed '/for module in wifi_comm uwe5621_bsp_sdio sprdwl_ng; do/,/^[[:space:]]*done[[:space:]]*$/c\
-        [ -d /sys/module/sprdwl_ng ] || exit 1' \
-        /newroot/usr/local/sbin/w152d-wifi >/run/w152d-mainline/wifi
-    chmod 0755 /run/w152d-mainline/wifi
-    mount --bind /run/w152d-mainline/wifi /newroot/usr/local/sbin/w152d-wifi
-fi
-
-cat >/run/w152d-mainline/rearm <<'EOF'
-#!/usr/local/bin/busybox sh
-boot=/media/w152d-usb/w152d/mainline
-[ -f "$boot/continuous" ] || exit 0
-for tick in $(seq 1 45); do
-    if ss -H -ltn 'sport = :2222' | grep -q ':2222'; then
-        if printf BOOT >"$boot/boot.arm.new" && mv -f "$boot/boot.arm.new" "$boot/boot.arm" && sync; then
-            echo '<5>W152D-USB-ROOT: SSH started, next mainline boot armed' >/dev/kmsg
-            exit 0
+find_usb_root() {
+    for part in /sys/class/block/sd*1; do
+        node=/dev/${part##*/}
+        [ -b "$node" ] || continue
+        parent=$(readlink -f "$part")
+        while [ -n "$parent" ] && [ ! -r "$parent/idVendor" ]; do
+            parent=${parent%/*}
+        done
+        [ -n "$parent" ] && [ "$(cat "$parent/idVendor"):$(cat "$parent/idProduct")" = 0781:55a3 ] || continue
+        mount -t vfat -o rw,noatime "$node" /usb || continue
+        if [ -r /usb/w152d/USB_ID ] &&
+           [ "$(tr -d '\r\n' </usb/w152d/USB_ID)" = W152D_ARMBIAN_USB_MAINLINE_V1 ] &&
+           [ -s /usb/w152d/rootfs.ext4 ]; then
+            return 0
         fi
+        umount /usb || exit 1
+    done
+    return 1
+}
+
+mkdir -p /usb /newroot /run
+for n in $(seq 1 15); do
+    if find_usb_root; then
+        break
     fi
     sleep 1
 done
-echo '<4>W152D-USB-ROOT: next boot remains on stock fallback' >/dev/kmsg
-EOF
-chmod 0755 /run/w152d-mainline/rearm
+mountpoint -q /usb
+loop_device=$(losetup -f)
+losetup "$loop_device" /usb/w152d/rootfs.ext4
+mount -t ext4 -o rw,noatime "$loop_device" /newroot
+[ -x /newroot/init ] && [ -x /newroot/usr/sbin/sshd ]
+[ "$(cat /newroot/etc/w152d-udisk)" = W152D_ARMBIAN_USB_MAINLINE_V1 ]
 
-printf '<5>W152D-USB-ROOT: switching to persistent Armbian on %s via %s\n' "$boot_device" "$loop_device" >/dev/kmsg
+mount -t tmpfs -o mode=0755,size=32m tmpfs /run
+mkdir -p /newroot/media/w152d-usb
 mount --move /usb /newroot/media/w152d-usb
 for mp in proc sys dev run; do
     mkdir -p "/newroot/$mp"
     mount --move "/$mp" "/newroot/$mp"
 done
 trap - EXIT
-export W152D_NETWORK_READY=1
-exec switch_root /newroot /run/w152d-mainline/armbian-init
+exec switch_root /newroot /init

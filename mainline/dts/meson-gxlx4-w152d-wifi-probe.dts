@@ -13,7 +13,7 @@
 };
 
 &{/soc} {
-	/* GPIO bank X input/output/direction from the stock GXLX4 bank table. */
+	/* GXLX4 GPIO bank X input, output and direction registers. */
 	wifi-gpio@fe004100 {
 		compatible = "amlogic,w152d-wifi-gpio", "syscon";
 		reg = <0x0 0xfe004100 0x0 0xc>;

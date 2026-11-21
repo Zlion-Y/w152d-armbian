@@ -3,21 +3,9 @@ set -eu
 umask 077
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 BB=/usr/local/bin/busybox
-MOD=/usr/lib/modules/w152d-wifi
 case "${1:-start}" in
     load)
-        for module in wifi_comm uwe5621_bsp_sdio sprdwl_ng; do
-            [ -d "/sys/module/$module" ] || "$BB" insmod "$MOD/$module.ko"
-        done
-        # Same debug control used by the stock Android wifilog_ctl.sh.
-        if ! "$BB" mountpoint -q /sys/kernel/debug; then
-            "$BB" mount -t debugfs -o mode=0700 debugfs /sys/kernel/debug
-            mounted_debugfs=1
-        else mounted_debugfs=0; fi
-        if [ -w /sys/kernel/debug/sprdwl_debug/log_level ]; then
-            echo debug_level=0 >/sys/kernel/debug/sprdwl_debug/log_level
-        fi
-        [ "$mounted_debugfs" = 0 ] || "$BB" umount /sys/kernel/debug
+        [ -d /sys/module/sprdwl_ng ] && [ -e /sys/class/net/wlan0 ] || exit 1
         for rf in /sys/class/rfkill/rfkill*; do
             [ -f "$rf/name" ] || continue
             case "$(cat "$rf/name")" in phy*) echo 1 >"$rf/state";;esac

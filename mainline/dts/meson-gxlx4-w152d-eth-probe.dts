@@ -5,8 +5,8 @@
 &{/} {
 	model = "China Mobile W152D (Amlogic GXLX4/S905L4) ethernet probe";
 
-	/* These rates come from the stock clock summary. The test checks whether
-	 * the firmware and stock kernel leave the corresponding gates active.
+	/* The board clock rates rely on the corresponding gates being enabled
+	 * when the boot firmware hands over control.
 	 */
 	sys_clk: clock-166666000 {
 		compatible = "fixed-clock";

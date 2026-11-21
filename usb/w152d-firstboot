@@ -3,9 +3,8 @@ set -eu
 umask 077
 BASE=/media/w152d-usb/${W152D_USB_DIR:-w152d}
 CONFIG=$BASE/config
-STOCK=$BASE/stock
 STATE=/var/lib/w152d
-mkdir -p "$STATE" /etc/wpa_supplicant /root/.ssh /vendor/firmware /vendor/etc /usr/lib/modules/w152d-wifi
+mkdir -p "$STATE" /etc/wpa_supplicant /root/.ssh
 chmod 700 /root/.ssh
 if [ ! -e "$STATE/provisioned" ]; then
     test -s "$CONFIG/authorized_keys" || { echo 'Missing w152d/config/authorized_keys'; exit 1; }
@@ -15,19 +14,6 @@ if [ ! -e "$STATE/provisioned" ]; then
         cp "$CONFIG/wpa_supplicant.conf" /etc/wpa_supplicant/w152d.conf
         chmod 600 /etc/wpa_supplicant/w152d.conf
     fi
-    test -d "$STOCK/modules"
-    cp "$STOCK/modules/"*.ko /usr/lib/modules/
-    for name in wifi_comm uwe5621_bsp_sdio sprdwl_ng; do
-        test ! -f "$STOCK/modules/$name.ko" || cp "$STOCK/modules/$name.ko" /usr/lib/modules/w152d-wifi/
-    done
-    cp "$STOCK/modules.order" /modules.order
-    for name in wcnmodem.bin regulatory.db regulatory.db.p7s; do
-        if [ -f "$STOCK/firmware/$name" ]; then
-            cp "$STOCK/firmware/$name" /vendor/firmware/
-            cp "$STOCK/firmware/$name" /usr/lib/firmware/
-        fi
-    done
-    test ! -f "$STOCK/wifi_board_config.ini" || cp "$STOCK/wifi_board_config.ini" /vendor/etc/
     # Unlock key authentication with an unknown random password hash; password
     # authentication remains disabled. The temporary password is never saved.
     hashed=$(openssl rand -base64 48 | openssl passwd -6 -stdin)

@@ -1,8 +1,9 @@
 """Write only the user's first-boot configuration to an already prepared USB."""
 from pathlib import Path
 import argparse,getpass,hashlib,json,base64,re,os
+from package_mainline_usb import USB_ID
 def configure(destination,key,ssid,password):
- base=destination/'w152d';assert (base/'USB_ID').read_bytes().strip()==b'W152D_ARMBIAN_USB_DIRECT_V1','Not a prepared W152D USB'
+ base=destination/'w152d';assert (base/'USB_ID').read_bytes().strip()==USB_ID,'Not a prepared W152D mainline USB'
  line=key.read_text(encoding='utf-8').strip()
  assert re.fullmatch(r'ssh-ed25519 [A-Za-z0-9+/=]+(?: [^\r\n]*)?',line),'Use a plain OpenSSH ED25519 public key'
  base64.b64decode(line.split()[1],validate=True)

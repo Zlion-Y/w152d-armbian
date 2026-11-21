@@ -4,30 +4,39 @@ import argparse
 import hashlib
 import re
 import struct
+import zlib
 from pathlib import Path
-
-from build_bootstrap import script_image
 
 
 TEMPLATES = Path(__file__).resolve().parents[1] / "usb/mainline"
 INPUTS = ("Image", "integrated-probe.dtb", "initramfs.cpio.gz", "kernel.config")
+USB_ID = b"W152D_ARMBIAN_USB_MAINLINE_V1"
 
 
-def read_artifacts(directory):
+def script_image(script, title):
+    data = struct.pack(">II", len(script), 0) + script
+    header = struct.pack(
+        ">7I4B32s", 0x27051956, 0, 0, len(data), 0, 0,
+        zlib.crc32(data), 5, 2, 6, 0, title,
+    )
+    return header[:4] + struct.pack(">I", zlib.crc32(header)) + header[8:] + data
+
+
+def read_artifacts(directory, expected=INPUTS):
     checksums = {}
     for line in (directory / "SHA256SUMS").read_text(encoding="ascii").splitlines():
         match = re.fullmatch(r"([0-9a-fA-F]{64}) [ *](.+)", line)
         if not match:
             raise ValueError("Malformed build SHA256SUMS")
         digest, name = match.groups()
-        if name not in INPUTS or name in checksums:
+        if name not in expected or name in checksums:
             raise ValueError(f"Unexpected or duplicate build manifest entry: {name}")
         checksums[name] = digest.lower()
-    if checksums.keys() != set(INPUTS):
-        raise ValueError("Manifest must cover Image, integrated-probe.dtb, initramfs.cpio.gz and kernel.config")
+    if checksums.keys() != set(expected):
+        raise ValueError(f"Manifest must cover {', '.join(expected)}")
 
     files = {}
-    for name in INPUTS:
+    for name in expected:
         data = (directory / name).read_bytes()
         if not data or hashlib.sha256(data).hexdigest() != checksums[name]:
             raise ValueError(f"Empty file or SHA-256 mismatch: {name}")

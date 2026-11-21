@@ -1,0 +1,38 @@
+#!/bin/busybox sh
+set -eu
+export PATH=/bin
+/bin/busybox --install -s /bin
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+
+load() {
+    if ! timeout 15 insmod "/drivers/$1.ko"; then
+        printf '<4>W152D: could not load %s\n' "$1" >/dev/kmsg
+        return 1
+    fi
+}
+
+if [ -L /sys/bus/platform/devices/fe35a000.usb3-phy/driver ] &&
+   [ -L /sys/bus/platform/devices/fe348000.usb2-hub/driver ]; then
+    load xhci-plat-hcd || :
+else
+    echo '<3>W152D: USB PHY driver binding incomplete' >/dev/kmsg
+fi
+
+if load smsc && load meson-gxl; then
+    load mdio-mux-meson-g12a || :
+fi
+
+if [ -L /sys/bus/platform/drivers/uwe_bsp/uwe-bsp ]; then
+    for n in 1 2 3 4 5 6; do
+        set -- /sys/bus/sdio/devices/*
+        [ -r "$1/vendor" ] && break
+        sleep 1
+    done
+    if [ -r "$1/vendor" ] && load rfkill && load cfg80211; then
+        load sprdwl_ng || :
+    fi
+fi
+
+exec /bin/w152d-usb-root

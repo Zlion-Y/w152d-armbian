@@ -1,0 +1,25 @@
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -3,6 +3,12 @@
+ # GPIO infrastructure and drivers
+ #
+ 
++config GPIO_W152D_AO
++	bool "W152D always-on GPIO for front-panel LEDs"
++	depends on ARCH_MESON && GPIOLIB
++	select GPIO_REGMAP
++	select MFD_SYSCON
++
+ menuconfig GPIOLIB
+ 	bool "GPIO Support"
+ 	help
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -1,6 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0
+ # generic gpio support: platform drivers, dedicated expander chips, etc
+ 
++obj-$(CONFIG_GPIO_W152D_AO)	+= w152d-ao-gpio.o
+ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+ 
+ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o

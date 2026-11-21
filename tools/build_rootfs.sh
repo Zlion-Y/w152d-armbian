@@ -64,7 +64,7 @@ mount -t sysfs -o ro sysfs "$ROOT/sys"
 mount --bind /etc/resolv.conf "$ROOT/etc/resolv.conf"
 printf 'Acquire::ForceIPv4 "true";\nAcquire::https::Timeout "45";\n' > "$ROOT/etc/apt/apt.conf.d/99w152d-build-ipv4"
 chroot "$ROOT" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::ForceIPv4=true -o Acquire::Languages=none -o Acquire::https::Timeout=30 -o Acquire::Retries=2 -o APT::Update::Error-Mode=any update
-chroot "$ROOT" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::ForceIPv4=true -o Acquire::https::Timeout=30 -y --no-install-recommends install busybox-static chrony openssh-server iw wpasupplicant ca-certificates e2fsprogs
+chroot "$ROOT" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::ForceIPv4=true -o Acquire::https::Timeout=30 -y --no-install-recommends install busybox-static chrony openssh-server openssl iproute2 iw wpasupplicant ca-certificates e2fsprogs
 chroot "$ROOT" apt-get clean
 rm -f "$ROOT/etc/apt/apt.conf.d/99w152d-build-ipv4"
 tar --numeric-owner -xpf "$OVERLAY" -C "$ROOT"
@@ -82,9 +82,7 @@ ln -sfn /run/w152d-resolv.conf "$ROOT/etc/resolv.conf"
 echo w152d > "$ROOT/etc/hostname"
 printf '127.0.0.1 localhost w152d\n::1 localhost\n' > "$ROOT/etc/hosts"
 date +%s > "$ROOT/var/lib/w152d/last-good-utc"
-printf 'PROBE_TOKEN=release-diagnostics\nPORT=18080\nRETURN_AFTER=0\n' > "$ROOT/probe.conf"
-: > "$ROOT/modules.order"
-printf 'W152D public USB rootfs; first-boot provisioning required\n' > "$ROOT/etc/w152d-udisk"
+printf 'W152D_ARMBIAN_USB_MAINLINE_V1\n' > "$ROOT/etc/w152d-udisk"
 chroot "$ROOT" dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' > "$OUTPUT.packages.tsv"
 if find "$ROOT/etc/ssh" "$ROOT/root/.ssh" -type f -name '*key*' -print | grep .; then
     echo 'Unexpected key in clean image' >&2; exit 1

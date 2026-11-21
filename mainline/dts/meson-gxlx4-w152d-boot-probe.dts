@@ -20,7 +20,7 @@
 		stdout-path = "serial0:921600n8";
 	};
 
-	/* Use the live stock FDT range after the firmware's RAM fixup. */
+	/* RAM range after the boot firmware's fixup. */
 	memory@0 {
 		device_type = "memory";
 		reg = <0x0 0x0 0x0 0x7f900000>;

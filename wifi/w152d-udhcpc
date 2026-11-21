@@ -20,15 +20,17 @@ case "$1" in
             "$IP" route del default dev eth0 2>/dev/null || :
             "$IP" addr flush dev eth0
         fi
+        metric=200
+        [ "$interface" != eth0 ] || metric=100
         for gateway in $router; do
-            "$IP" route replace default via "$gateway" dev "$interface" metric 100
+            "$IP" route replace default via "$gateway" dev "$interface" metric "$metric"
             break
         done
         # Keep DNS in RAM; the persistent /etc/resolv.conf points here.
         : >/run/w152d-resolv.conf
         for server in $dns; do echo "nameserver $server" >>/run/w152d-resolv.conf; done
         chmod 644 /run/w152d-resolv.conf
-        echo "WIFI_DHCP_BOUND=$ip/$prefix"
+        echo "DHCP_BOUND $interface $ip/$prefix"
         if [ ! -s /run/w152d-ntp.pid ] || ! kill -0 "$(cat /run/w152d-ntp.pid)" 2>/dev/null; then
             mkdir -p /run/chrony
             chown _chrony:_chrony /run/chrony

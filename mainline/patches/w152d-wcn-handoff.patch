@@ -40,7 +40,7 @@
  #endif
  	wcn_get_chip_name();
 +#ifdef CONFIG_WCN_SDIO
-+	/* The stock driver leaves the WCN CPU in standby across kexec. */
++	/* Place the radio CPU in a known state before loading firmware. */
 +	if (of_machine_is_compatible("amlogic,gxlx4-s905l4-w150d")) {
 +		marlin_hold_cpu();
 +		usleep_range(1000, 2000);

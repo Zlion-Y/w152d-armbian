@@ -1,34 +1,52 @@
-"""Prepare files on an existing mounted USB; never repartitions or flashes it."""
+"""Copy a W152D mainline bundle and a fresh ext4 rootfs to a mounted USB."""
+
+import argparse
+import shutil
 from pathlib import Path
-import argparse,gzip,hashlib,shutil,sys,zipfile,getpass,os
-sys.path.insert(0,str(Path(__file__).resolve().parent))
-from extract_stock import extract
-from configure_usb import configure
-def digest(p):
- h=hashlib.sha256()
- with p.open('rb') as f:
-  for b in iter(lambda:f.read(4*1024*1024),b''):h.update(b)
- return h.hexdigest()
+
+from package_mainline_usb import INPUTS, USB_ID, read_artifacts
+
+
+def prepare(usb, bundle, rootfs):
+    if not usb.is_dir():
+        raise ValueError("Mount the target volume before copying")
+    board = usb / "w152d"
+    entry = usb / "aml_autoscript"
+    if board.exists() or entry.exists() or board.is_symlink() or entry.is_symlink():
+        raise ValueError("Use a volume with no existing w152d directory or aml_autoscript")
+    files = read_artifacts(bundle, (*INPUTS, "boot.scr", "aml_autoscript"))
+    if not rootfs.is_file():
+        raise ValueError("Rootfs must be a regular file")
+    with rootfs.open("rb") as source:
+        source.seek(1080)
+        if source.read(2) != b"\x53\xef":
+            raise ValueError("Expected an uncompressed ext4 rootfs file")
+    size = rootfs.stat().st_size
+    if size >= 2**32 or shutil.disk_usage(usb).free < size + sum(map(len, files.values())) + 1024**2:
+        raise ValueError("Rootfs must fit FAT32 and the target volume must have enough free space")
+    target = board / "mainline"
+    target.mkdir(parents=True)
+    with (board / "rootfs.ext4").open("xb") as destination, rootfs.open("rb") as source:
+        shutil.copyfileobj(source, destination)
+    (board / "USB_ID").write_bytes(USB_ID + b"\n")
+    for name in ("Image", "integrated-probe.dtb", "initramfs.cpio.gz", "boot.scr"):
+        (target / name).write_bytes(files[name])
+    with entry.open("xb") as destination:
+        destination.write(files["aml_autoscript"])
+
+
 def main():
- p=argparse.ArgumentParser();p.add_argument('--usb',type=Path,required=True);p.add_argument('--rootfs',type=Path,required=True);p.add_argument('--bootstrap',type=Path,required=True);p.add_argument('--checksums',type=Path,required=True);p.add_argument('--stock-dir',type=Path,required=True);p.add_argument('--vendor-image',type=Path,required=True);p.add_argument('--public-key',type=Path,required=True);p.add_argument('--ssid');a=p.parse_args()
- assert a.usb.is_dir(),'The USB must already be mounted; this tool does not format drives'
- image=a.usb/'w152d/rootfs.ext4'
- assert not image.exists(),'Existing rootfs refused. Choose an empty USB or move it aside yourself.'
- checks={line.split(None,1)[1].lstrip('*').strip():line.split()[0] for line in a.checksums.read_text().splitlines() if line.strip()}
- for path in [a.rootfs,a.bootstrap]:assert checks.get(path.name)==digest(path),path.name+' SHA256 mismatch'
- assert shutil.disk_usage(a.usb).free>3*1024**3,'At least 3 GiB free space is required'
- password=getpass.getpass('Wi-Fi password (not echoed): ') if a.ssid else ''
- with zipfile.ZipFile(a.bootstrap) as z:
-  for name in ['aml_autoscript','w152d/initramfs.cpio.gz','w152d/USB_ID']:
-   target=a.usb/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(z.read(name))
- extract(a.stock_dir,a.vendor_image,a.usb/'w152d')
- partial=image.with_suffix('.ext4.partial')
- assert not partial.exists(),'An unfinished image already exists; inspect it before retrying'
- with gzip.open(a.rootfs,'rb') as src,partial.open('xb') as dst:
-  shutil.copyfileobj(src,dst,4*1024*1024);dst.flush();os.fsync(dst.fileno())
- assert partial.stat().st_size==2147483648,'Unexpected rootfs image size'
- with partial.open('rb') as f:f.seek(1080);assert f.read(2)==b'\x53\xef','Not an ext4 filesystem'
- partial.rename(image)
- configure(a.usb,a.public_key,a.ssid,password)
- print('USB files prepared. Boot-order activation is a separate, backup-first step. Eject the USB safely.')
-if __name__=='__main__':main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--usb", type=Path, required=True)
+    parser.add_argument("--bundle", type=Path, required=True)
+    parser.add_argument("--rootfs", type=Path, required=True)
+    args = parser.parse_args()
+    try:
+        prepare(args.usb, args.bundle, args.rootfs)
+    except (OSError, ValueError) as error:
+        parser.exit(1, f"{error}\n")
+    print("USB files copied. Configure your SSH key and arm the first boot before ejecting.")
+
+
+if __name__ == "__main__":
+    main()
