@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: GPL-2.0+
+
+#include "meson-gxlx4-w152d-sdio-probe.dts"
+
+&{/} {
+	model = "China Mobile W152D (Amlogic GXLX4/S905L4) Wi-Fi probe";
+
+	/* The UWE5622 build uses CONFIG_WCN_PARSE_DTS and needs this node. */
+	uwe-bsp {
+		compatible = "unisoc,uwe_bsp";
+		data-irq;
+	};
+};
+
+&{/soc} {
+	/* GPIO bank X input/output/direction from the stock GXLX4 bank table. */
+	wifi-gpio@fe004100 {
+		compatible = "amlogic,w152d-wifi-gpio", "syscon";
+		reg = <0x0 0xfe004100 0x0 0xc>;
+	};
+};
+
+&{/soc/mmc@fe088000} {
+	/* Adopt the firmware's pins without writing a pinmux register. */
+	pinctrl-names = "default";
+	pinctrl-0 = <>;
+	max-frequency = <200000000>;
+	cap-sd-highspeed;
+	sd-uhs-sdr50;
+	sd-uhs-sdr104;
+};

@@ -1,0 +1,14 @@
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+@@ -330,6 +330,11 @@
+ 				PRG_ETH0_ADJ_ENABLE | PRG_ETH0_ADJ_SETUP |
+ 				PRG_ETH0_ADJ_DELAY | PRG_ETH0_ADJ_SKEW,
+ 				delay_config);
++
++	/* GXLX4 W152D needs the stock RX clock setting even in RMII mode. */
++	if (dwmac->phy_mode == PHY_INTERFACE_MODE_RMII &&
++	    of_machine_is_compatible("amlogic,gxlx4-s905l4-w150d"))
++		cfg_rxclk_dly = BIT(19);
+ 
+ 	meson8b_dwmac_mask_bits(dwmac, PRG_ETH1, PRG_ETH1_CFG_RXCLK_DLY,
+ 				cfg_rxclk_dly);

@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
+
+#include "meson-gxlx4-w152d-usb-probe.dts"
+#include "meson-gxlx4-w152d-wifi-probe.dts"
+#include "meson-gxlx4-w152d-eth-probe.dts"
+
+&{/} {
+	model = "China Mobile W152D (Amlogic GXLX4/S905L4) integrated probe";
+};

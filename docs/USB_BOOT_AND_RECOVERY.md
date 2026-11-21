@@ -1,5 +1,7 @@
 # USB 启动、环境修改与恢复
 
+本文记录原厂 5.4.210 预览版的启动顺序设置。已具备 USB 启动入口的 W152D 可直接使用 [Linux 6.12 适配的 U 盘脚本](MAINLINE_USB.md)，该升级流程仅写入 U 盘。
+
 ## 已实测
 
 原厂 U-Boot 能读取 `aml_autoscript`，以 `booti` 启动内核、initramfs 与原厂 DTB，挂载 U 盘上的 ext4 loop 镜像。根文件持久化已跨重启读回。持久 bootcmd 自动启动已通过；临时隐藏 aml_autoscript 后，原厂 Android 回退成功。

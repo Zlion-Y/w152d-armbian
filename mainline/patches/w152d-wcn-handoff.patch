@@ -1,0 +1,51 @@
+--- a/drivers/net/wireless/uwe5622/unisocwcn/platform/wcn_boot.c
++++ b/drivers/net/wireless/uwe5622/unisocwcn/platform/wcn_boot.c
+@@ -1044,12 +1044,28 @@
+ 
+ #ifdef CONFIG_WCN_DOWNLOAD_FIRMWARE_FROM_HEX
+ 
+-	/* Some customer (amlogic) download fw from /fw/wcnmodem.bin.hex */
+-	WCN_INFO("marlin %s from wcnmodem.bin.hex start!\n", __func__);
+-	mfirmware->data = firmware_hex_buf;
+-	mfirmware->size = FIRMWARE_HEX_SIZE;
+-	mfirmware->is_from_fs = 0;
+-	mfirmware->priv = firmware_hex_buf;
++	if (of_machine_is_compatible("amlogic,gxlx4-s905l4-w150d")) {
++		const struct firmware *fw;
++		int ret;
++
++		ret = request_firmware_direct(&fw, WCN_FW_NAME, NULL);
++		if (ret) {
++			kfree(mfirmware);
++			return ret;
++		}
++		WCN_INFO("W152D: using board firmware %s (%zu bytes)\n",
++			 WCN_FW_NAME, fw->size);
++		mfirmware->data = fw->data;
++		mfirmware->size = fw->size;
++		mfirmware->is_from_fs = 1;
++		mfirmware->priv = (void *)fw;
++	} else {
++		WCN_INFO("marlin %s from wcnmodem.bin.hex start!\n", __func__);
++		mfirmware->data = firmware_hex_buf;
++		mfirmware->size = FIRMWARE_HEX_SIZE;
++		mfirmware->is_from_fs = 0;
++		mfirmware->priv = firmware_hex_buf;
++	}
+ 
+ #else /* CONFIG_WCN_DOWNLOAD_FIRMWARE_FROM_HEX */
+ 
+@@ -3255,6 +3271,13 @@
+ 	marlin_firmware_download_start_usb();
+ #endif
+ 	wcn_get_chip_name();
++#ifdef CONFIG_WCN_SDIO
++	/* The stock driver leaves the WCN CPU in standby across kexec. */
++	if (of_machine_is_compatible("amlogic,gxlx4-s905l4-w150d")) {
++		marlin_hold_cpu();
++		usleep_range(1000, 2000);
++	}
++#endif
+ 
+ 	if (btwifi_download_firmware() == 0 &&
+ 		marlin_start_run() == 0) {

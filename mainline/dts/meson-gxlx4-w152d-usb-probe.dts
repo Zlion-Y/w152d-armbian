@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: GPL-2.0+
+
+#include "meson-gxlx4-w152d-boot-probe.dts"
+
+&{/} {
+	model = "China Mobile W152D (Amlogic GXLX4/S905L4) USB probe";
+
+	usb-clock-166666000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <166666000>;
+		clock-output-names = "w152d-usb-sys";
+	};
+
+	clock-250000000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <250000000>;
+		clock-output-names = "w152d-usb-ref";
+	};
+};
+
+&{/soc} {
+	crg_clk: clock-controller@fe000048 {
+		compatible = "amlogic,w152d-crg-clock-probe";
+		reg = <0x0 0xfe000048 0x0 0x4>, <0x0 0xfe0001a0 0x0 0x4>;
+		#clock-cells = <1>;
+	};
+
+	usb3-phy@fe35a000 {
+		compatible = "amlogic,w152d-usb3-phy-probe";
+		reg = <0x0 0xfe35a000 0x0 0x184>, <0x0 0xfe002000 0x0 0x100>,
+		      <0x0 0xfe004184 0x0 0x8>,
+		      <0x0 0xfe358000 0x0 0x10>, <0x0 0xfe350000 0x0 0x8000>;
+		reg-names = "analog", "reset", "vbus-gpio", "usb2-companion", "crg";
+		clocks = <&crg_clk 0>, <&crg_clk 2>;
+		clock-names = "crg", "pipe";
+	};
+
+	usb@fe350000 {
+		compatible = "generic-xhci";
+		reg = <0x0 0xfe350000 0x0 0x8000>;
+		interrupts = <GIC_SPI 131 IRQ_TYPE_EDGE_RISING>;
+		clocks = <&crg_clk 0>;
+	};
+
+	usb2-hub@fe348000 {
+		compatible = "amlogic,w152d-usb2-hub-probe";
+		reg = <0x0 0xfe348000 0x0 0x10>, <0x0 0xfe004144 0x0 0x8>,
+		      <0x0 0xfe004204 0x0 0x8>, <0x0 0xfe002000 0x0 0x100>,
+		      <0x0 0xfe340000 0x0 0x8000>;
+		reg-names = "phy", "hub-reset-gpio", "port-enable-gpio", "reset", "crg";
+		clocks = <&crg_clk 1>;
+	};
+
+	usb@fe340000 {
+		compatible = "generic-xhci";
+		reg = <0x0 0xfe340000 0x0 0x8000>;
+		interrupts = <GIC_SPI 130 IRQ_TYPE_EDGE_RISING>;
+		clocks = <&crg_clk 1>;
+	};
+};

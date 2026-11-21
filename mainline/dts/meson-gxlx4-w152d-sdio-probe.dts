@@ -1,0 +1,55 @@
+// SPDX-License-Identifier: GPL-2.0+
+
+#include "meson-gxlx4-w152d-boot-probe.dts"
+
+&{/} {
+	model = "China Mobile W152D (Amlogic GXLX4/S905L4) SDIO probe";
+
+	sdio_bus_clk: sdio-clock-166666000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <166666000>;
+	};
+
+	gp0_pll: clock-1152000000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <1152000000>;
+	};
+
+	/* The rails are already on at the stock-to-mainline handoff. */
+	sdio_vmmc: regulator-sdio-vmmc {
+		compatible = "regulator-fixed";
+		regulator-name = "sdio-vmmc";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+	};
+
+	sdio_vqmmc: regulator-sdio-vqmmc {
+		compatible = "regulator-fixed";
+		regulator-name = "sdio-vqmmc";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-always-on;
+	};
+};
+
+&{/soc} {
+	mmc@fe088000 {
+		compatible = "amlogic,meson-axg-mmc";
+		reg = <0x0 0xfe088000 0x0 0x1000>;
+		interrupts = <GIC_SPI 176 IRQ_TYPE_LEVEL_HIGH>;
+		/* Reuse the firmware-enabled bus gate and pinmux during kexec. */
+		clocks = <&sdio_bus_clk>, <&xtal>, <&gp0_pll>;
+		clock-names = "core", "clkin0", "clkin1";
+		vmmc-supply = <&sdio_vmmc>;
+		vqmmc-supply = <&sdio_vqmmc>;
+		bus-width = <4>;
+		max-frequency = <25000000>;
+		cap-sdio-irq;
+		non-removable;
+		no-mmc;
+		no-sd;
+	};
+};

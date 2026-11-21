@@ -3,9 +3,9 @@ from pathlib import Path
 import argparse,sys,stat,gzip,hashlib,struct,zlib,json,zipfile
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
 import build_probe as bp
-def script_image(script):
+def script_image(script, title=b'W152D USB Linux preview'):
  data=struct.pack('>II',len(script),0)+script
- h=struct.pack('>7I4B32s',0x27051956,0,0,len(data),0,0,zlib.crc32(data),5,2,6,0,b'W152D USB Linux preview')
+ h=struct.pack('>7I4B32s',0x27051956,0,0,len(data),0,0,zlib.crc32(data),5,2,6,0,title)
  h=h[:4]+struct.pack('>I',zlib.crc32(h))+h[8:]
  return h+data
 def build(binary,out):

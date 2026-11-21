@@ -1,0 +1,74 @@
+// SPDX-License-Identifier: GPL-2.0+
+
+#include "meson-gxlx4-w152d-boot-probe.dts"
+
+&{/} {
+	model = "China Mobile W152D (Amlogic GXLX4/S905L4) ethernet probe";
+
+	/* These rates come from the stock clock summary. The test checks whether
+	 * the firmware and stock kernel leave the corresponding gates active.
+	 */
+	sys_clk: clock-166666000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <166666000>;
+	};
+
+	fclk_div2: clock-1000000000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <1000000000>;
+	};
+
+	fclk_50m: clock-50000000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <50000000>;
+	};
+};
+
+&{/soc} {
+	ethernet@fe368000 {
+		compatible = "amlogic,meson-axg-dwmac", "snps,dwmac-4.00";
+		reg = <0x0 0xfe368000 0x0 0x12ec>,
+		      <0x0 0xfe364000 0x0 0x2c>;
+		interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "macirq";
+		clocks = <&sys_clk>, <&fclk_div2>, <&fclk_50m>;
+		clock-names = "stmmaceth", "clkin0", "clkin1";
+		rx-fifo-depth = <4096>;
+		tx-fifo-depth = <2048>;
+		phy-mode = "rmii";
+		phy-handle = <&phy8>;
+
+		mac_mdio: mdio {
+			compatible = "snps,dwmac-mdio";
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+
+	mdio-multiplexer@fe360000 {
+		compatible = "amlogic,g12a-mdio-mux";
+		reg = <0x0 0xfe360000 0x0 0xa4>;
+		clocks = <&sys_clk>, <&xtal>, <&fclk_50m>;
+		clock-names = "pclk", "clkin0", "clkin1";
+		mdio-parent-bus = <&mac_mdio>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		mdio@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			phy8: ethernet-phy@8 {
+				/* Let phylib read the ID over MDIO during this test. */
+				compatible = "ethernet-phy-ieee802.3-c22";
+				reg = <8>;
+				max-speed = <100>;
+				interrupts = <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
+			};
+		};
+	};
+};

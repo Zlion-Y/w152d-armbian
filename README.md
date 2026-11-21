@@ -1,8 +1,11 @@
 # W152D / S905L4 USB Linux
 
-在 W152D 上使用原厂 ARM64 Linux 5.4.210 内核运行 Armbian Bookworm 用户空间。已完成 U-Boot 直接读取 U 盘、ext4 持久根目录、5 GHz Wi-Fi、DHCP、密钥 SSH/SFTP、HTTP 状态页及 HTTPS。PID 1 为自定义 BusyBox，不代表 Armbian 官方支持此板卡，也不是桌面发行版。
+在 W152D 上从 U 盘运行 Armbian Bookworm 用户空间，使用 ext4 持久根目录与自定义 BusyBox PID 1。
 
-## 下载与准备
+- **Linux 6.12.0 板级适配**已通过物理断电后的无人值守启动、百兆全双工、5 GHz Wi-Fi 及四个 USB 外口实测。适配沿用已有的原厂 U-Boot USB 入口，板级初始化放在 U 盘上。仓库提供[主线适配源码、出包说明和验收结果](docs/MAINLINE_USB.md)，目前处于源码预览阶段。
+- **原厂 Linux 5.4.210 预览版**提供下文的制盘流程，已验证 5 GHz Wi-Fi、DHCP、密钥 SSH/SFTP、HTTP 状态页及 HTTPS。
+
+## 原厂 5.4.210 版下载与准备
 
 下载 [Releases](https://github.com/Zlion-Y/w152d-armbian/releases) 中同一版本的：
 
@@ -32,7 +35,7 @@ python tools/prepare_usb.py --usb F:\ `
 
 首次启动会导入你的公钥和原厂文件，并生成这份安装独有的 SSH 主机密钥。**镜像没有通用 SSH 密码。** 主机公钥会写回 U 盘 `w152d/config/ssh_host_ed25519_key.pub`，可用 `ssh-keygen -lf` 核对首次连接指纹。
 
-## 启动顺序
+## 原厂 5.4.210 版启动顺序
 
 已设置过本项目 USB 优先环境的设备可直接启动。新设备先完成一次性 U-Boot 验证，再按 [启动与恢复说明](docs/USB_BOOT_AND_RECOVERY.md) 备份并激活。先用默认的只读/生成补丁模式审阅：
 
