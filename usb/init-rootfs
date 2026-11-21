@@ -14,6 +14,8 @@ if [ -x /usr/local/libexec/w152d-time ]; then
     /usr/local/libexec/w152d-time restore
 fi
 exec >/run/w152d-boot.log 2>&1
+/usr/local/libexec/w152d-grow-rootfs >/run/w152d-grow-rootfs.log 2>&1 ||
+    echo 'USB root filesystem expansion did not complete; see /run/w152d-grow-rootfs.log'
 /usr/local/sbin/w152d-firstboot || echo 'First-boot setup incomplete; supply your public key on USB'
 export BB
 echo 'W152D persistent USB rootfs'

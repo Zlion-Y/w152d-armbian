@@ -1,0 +1,41 @@
+#!/usr/local/bin/busybox sh
+set -eu
+
+boot=/media/w152d-usb
+[ -r "$boot/w152d/ROOT_LAYOUT" ] && [ "$(cat "$boot/w152d/ROOT_LAYOUT")" = P2 ] || exit 0
+bootdev=$(findmnt -nro SOURCE -M "$boot")
+rootdev=$(findmnt -nro SOURCE -M /)
+case "$bootdev" in /dev/sd*[!0-9]1) ;; *) exit 1 ;; esac
+disk=${bootdev%1}
+[ "$rootdev" = "${disk}2" ]
+[ "$(lsblk -dnro TRAN "$disk")" = usb ]
+[ "$(blockdev --getss "$disk")" = 512 ]
+
+table=$(sfdisk --dump "$disk")
+printf '%s\n' "$table" | grep -qx 'label: dos'
+[ "$(printf '%s\n' "$table" | grep -c '^/dev/')" = 2 ]
+sys="/sys/class/block/${rootdev##*/}"
+start=$(cat "$sys/start")
+size=$(cat "$sys/size")
+capacity=$(blockdev --getsz "$disk")
+[ "$capacity" -le 4294967295 ]
+remaining=$((capacity - start))
+[ "$size" -le "$remaining" ]
+
+stamp=/var/lib/w152d/rootfs-grown
+if [ "$size" -lt "$remaining" ]; then
+    # Only partition 2's length changes. Preserve the mounted FAT partition.
+    printf 'size=%s\n' "$remaining" | sfdisk --lock=yes --no-reread --no-tell-kernel -N 2 "$disk"
+    sync
+    partx --update --nr 2 "$disk"
+    [ "$(cat "$sys/size")" = "$remaining" ]
+elif [ -e "$stamp" ]; then
+    exit 0
+fi
+
+# Retry after a power loss between updating the partition and growing ext4.
+resize2fs "$rootdev"
+mkdir -p /var/lib/w152d
+touch "$stamp"
+sync
+printf '<6>W152D: grew USB root filesystem %s to %s sectors\n' "$rootdev" "$remaining" >/dev/kmsg

@@ -4,7 +4,7 @@ set -euo pipefail
 
 kernel=$(realpath "${1:?compiled W152D kernel tree required}")
 busybox=$(realpath "${2:?static ARM64 BusyBox required}")
-firmware=$(realpath "${3:?firmware directory required}")
+firmware=${3:?firmware directory or - required}
 output=$(realpath -m "${4:?new output directory required}")
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 test ! -e "$output"
@@ -20,15 +20,18 @@ if grep -q 'INTERP' "$work/busybox.program"; then
     echo 'BusyBox must be statically linked' >&2
     exit 1
 fi
-(
-    cd "$firmware"
-    sha256sum -c <<'EOF'
+if [[ $firmware != - ]]; then
+    firmware=$(realpath "$firmware")
+    (
+        cd "$firmware"
+        sha256sum -c <<'EOF'
 2515a0a09d8e94da63aa2769b6457eee3c56c300641675da3aeb5ede09dacfaf  wcnmodem.bin
 4c95dac0bf3681e1af31e89d6bd54494ce183839cf4a2e19c5953e2b243398f7  wifi_56630001_3ant.ini
 EOF
-    test -s regulatory.db
-    test -s regulatory.db.p7s
-)
+        test -s regulatory.db
+        test -s regulatory.db.p7s
+    )
+fi
 for flag in GPIO_W152D_AO GPIO_REGMAP LEDS_GPIO; do
     grep -qx "CONFIG_${flag}=y" "$kernel/.config"
 done
@@ -41,9 +44,11 @@ dtc -I dts -O dtb -o "$work/integrated-probe.dtb" "$work/board.dts"
 mkdir "$work/sources"
 cp "$busybox" "$work/sources/busybox"
 cp "$repo/usb/mainline/"{init,w152d_usb_root} "$work/sources/"
-for name in wcnmodem.bin wifi_56630001_3ant.ini regulatory.db regulatory.db.p7s; do
-    cp "$firmware/$name" "$work/sources/"
-done
+if [[ $firmware != - ]]; then
+    for name in wcnmodem.bin wifi_56630001_3ant.ini regulatory.db regulatory.db.p7s; do
+        cp "$firmware/$name" "$work/sources/"
+    done
+fi
 modules=(
     drivers/usb/host/xhci-plat-hcd.ko
     drivers/net/phy/smsc.ko
@@ -83,9 +88,11 @@ EOF
         name=${module##*/}
         printf 'file /drivers/%s sources/%s 0644 0 0\n' "$name" "$name"
     done >>initramfs.list
-    for name in wcnmodem.bin wifi_56630001_3ant.ini regulatory.db regulatory.db.p7s; do
-        printf 'file /lib/firmware/%s sources/%s 0644 0 0\n' "$name" "$name"
-    done >>initramfs.list
+    if [[ $firmware != - ]]; then
+        for name in wcnmodem.bin wifi_56630001_3ant.ini regulatory.db regulatory.db.p7s; do
+            printf 'file /lib/firmware/%s sources/%s 0644 0 0\n' "$name" "$name"
+        done >>initramfs.list
+    fi
     ./gen_init_cpio initramfs.list | gzip -n -9 >initramfs.cpio.gz
 )
 

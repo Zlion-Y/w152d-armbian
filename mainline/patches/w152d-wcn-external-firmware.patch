@@ -1,0 +1,27 @@
+--- a/drivers/net/wireless/uwe5622/unisocwcn/platform/wcn_boot.c
++++ b/drivers/net/wireless/uwe5622/unisocwcn/platform/wcn_boot.c
+@@ -62,10 +62,6 @@
+ EXPORT_SYMBOL(__stack_chk_guard);
+ #endif
+ 
+-#ifdef CONFIG_WCN_DOWNLOAD_FIRMWARE_FROM_HEX
+-#include "../fw/firmware_hex.h"
+-#endif
+-
+ #ifdef CONFIG_AML_BOARD
+ #include <linux/amlogic/aml_gpio_consumer.h>
+ 
+@@ -1062,11 +1058,8 @@
+ 		mfirmware->is_from_fs = 1;
+ 		mfirmware->priv = (void *)fw;
+ 	} else {
+-		WCN_INFO("marlin %s from wcnmodem.bin.hex start!\n", __func__);
+-		mfirmware->data = firmware_hex_buf;
+-		mfirmware->size = FIRMWARE_HEX_SIZE;
+-		mfirmware->is_from_fs = 0;
+-		mfirmware->priv = firmware_hex_buf;
++		kfree(mfirmware);
++		return -ENODEV;
+ 	}
+ 
+ #else /* CONFIG_WCN_DOWNLOAD_FIRMWARE_FROM_HEX */

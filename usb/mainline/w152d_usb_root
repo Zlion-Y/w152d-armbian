@@ -10,23 +10,42 @@ failed() {
 trap failed EXIT
 
 find_usb_root() {
+    boot_device=
     for part in /sys/class/block/sd*1; do
+        [ "$(cat "$part/partition" 2>/dev/null)" = 1 ] || continue
         node=/dev/${part##*/}
         [ -b "$node" ] || continue
         parent=$(readlink -f "$part")
         while [ -n "$parent" ] && [ ! -r "$parent/idVendor" ]; do
             parent=${parent%/*}
         done
-        [ -n "$parent" ] && [ "$(cat "$parent/idVendor"):$(cat "$parent/idProduct")" = 0781:55a3 ] || continue
-        mount -t vfat -o rw,noatime "$node" /usb || continue
+        [ -n "$parent" ] && [ -r "$parent/idProduct" ] || continue
+        mount -t vfat -o ro,noatime "$node" /usb || continue
         if [ -r /usb/w152d/USB_ID ] &&
-           [ "$(tr -d '\r\n' </usb/w152d/USB_ID)" = W152D_ARMBIAN_USB_MAINLINE_V1 ] &&
-           [ -s /usb/w152d/rootfs.ext4 ]; then
-            return 0
+           [ "$(tr -d '\r\n' </usb/w152d/USB_ID)" = W152D_ARMBIAN_USB_MAINLINE_V1 ]; then
+            root_device=
+            if [ -r /usb/w152d/ROOT_LAYOUT ]; then
+                if [ "$(tr -d '\r\n' </usb/w152d/ROOT_LAYOUT)" = P2 ] && [ -b "${node%1}2" ]; then
+                    root_device=${node%1}2
+                fi
+            elif [ -s /usb/w152d/rootfs.ext4 ]; then
+                root_device=loop
+            fi
+            if [ -z "$root_device" ]; then
+                umount /usb || exit 1
+                continue
+            fi
+            if [ -n "$boot_device" ]; then
+                echo '<3>W152D: multiple marked USB boot disks attached' >/dev/kmsg
+                umount /usb
+                exit 1
+            fi
+            boot_device=$node
+            selected_root=$root_device
         fi
         umount /usb || exit 1
     done
-    return 1
+    [ -n "$boot_device" ]
 }
 
 mkdir -p /usb /newroot /run
@@ -36,10 +55,36 @@ for n in $(seq 1 15); do
     fi
     sleep 1
 done
-mountpoint -q /usb
-loop_device=$(losetup -f)
-losetup "$loop_device" /usb/w152d/rootfs.ext4
-mount -t ext4 -o rw,noatime "$loop_device" /newroot
+[ -n "$boot_device" ]
+mount -t vfat -o rw,noatime "$boot_device" /usb
+usb_path=$(readlink -f "/sys/class/block/${boot_device##*/}")
+printf '<6>W152D: USB boot filesystem on %s (%s)\n' "$boot_device" "$usb_path" >/dev/kmsg
+
+wifi=/usb/w152d/firmware
+if [ -s "$wifi/wcnmodem.bin" ] && [ -s "$wifi/wifi_56630001_3ant.ini" ] &&
+   [ -s "$wifi/regulatory.db" ] && [ -s "$wifi/regulatory.db.p7s" ]; then
+    for file in wcnmodem.bin wifi_56630001_3ant.ini regulatory.db regulatory.db.p7s; do
+        cp "$wifi/$file" "/lib/firmware/$file"
+    done
+fi
+if [ -s /lib/firmware/wcnmodem.bin ] &&
+   [ -L /sys/bus/platform/drivers/uwe_bsp/uwe-bsp ]; then
+    for n in 1 2 3 4 5 6; do
+        set -- /sys/bus/sdio/devices/*
+        [ -r "$1/vendor" ] && break
+        sleep 1
+    done
+    if [ -r "$1/vendor" ] && timeout 15 insmod /drivers/rfkill.ko &&
+       timeout 15 insmod /drivers/cfg80211.ko; then
+        timeout 15 insmod /drivers/sprdwl_ng.ko || echo '<4>W152D: WLAN module load failed' >/dev/kmsg
+    fi
+fi
+if [ "$selected_root" = loop ]; then
+    selected_root=$(losetup -f)
+    losetup "$selected_root" /usb/w152d/rootfs.ext4
+fi
+mount -t ext4 -o rw,noatime "$selected_root" /newroot
+printf '<6>W152D: root filesystem mounted on %s\n' "$selected_root" >/dev/kmsg
 [ -x /newroot/init ] && [ -x /newroot/usr/sbin/sshd ]
 [ "$(cat /newroot/etc/w152d-udisk)" = W152D_ARMBIAN_USB_MAINLINE_V1 ]
 

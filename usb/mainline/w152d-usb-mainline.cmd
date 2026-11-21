@@ -7,12 +7,12 @@ gpio clear GPIOAO_7
 setenv w152d_old_args "${bootargs}"
 setenv w152d_old_fdt_high "${fdt_high}"
 setenv w152d_old_initrd_high "${initrd_high}"
-if fatload usb 0:1 0x08600000 w152d/mainline/Image; then
+if fatload usb ${w152d_usbdev}:1 0x08600000 w152d/mainline/Image; then
     if itest ${filesize} == 0x@IMAGE_SIZE@; then
-        if fatload usb 0:1 0x0b800000 w152d/mainline/initramfs.cpio.gz; then
+        if fatload usb ${w152d_usbdev}:1 0x0b800000 w152d/mainline/initramfs.cpio.gz; then
             setenv w152d_ml_rd_size ${filesize}
             if itest ${filesize} == 0x@INITRD_SIZE@; then
-                if fatload usb 0:1 0x0d000000 w152d/mainline/integrated-probe.dtb; then
+                if fatload usb ${w152d_usbdev}:1 0x0d000000 w152d/mainline/integrated-probe.dtb; then
                     if itest ${filesize} == 0x@DTB_SIZE@; then
                         if fdt addr 0x0d000000 && fdt resize 0x10000; then
                             powerset 8 0

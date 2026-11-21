@@ -7,6 +7,20 @@ from pathlib import Path
 from package_mainline_usb import INPUTS, USB_ID, read_artifacts
 
 
+BOOT_FILES = ("Image", "integrated-probe.dtb", "initramfs.cpio.gz", "boot.scr")
+
+
+def write_boot_files(usb, files):
+    board = usb / "w152d"
+    target = board / "mainline"
+    target.mkdir(parents=True)
+    (board / "USB_ID").write_bytes(USB_ID + b"\n")
+    for name in BOOT_FILES:
+        (target / name).write_bytes(files[name])
+    with (usb / "aml_autoscript").open("xb") as destination:
+        destination.write(files["aml_autoscript"])
+
+
 def prepare(usb, bundle, rootfs):
     if not usb.is_dir():
         raise ValueError("Mount the target volume before copying")
@@ -24,15 +38,10 @@ def prepare(usb, bundle, rootfs):
     size = rootfs.stat().st_size
     if size >= 2**32 or shutil.disk_usage(usb).free < size + sum(map(len, files.values())) + 1024**2:
         raise ValueError("Rootfs must fit FAT32 and the target volume must have enough free space")
-    target = board / "mainline"
-    target.mkdir(parents=True)
+    board.mkdir()
     with (board / "rootfs.ext4").open("xb") as destination, rootfs.open("rb") as source:
         shutil.copyfileobj(source, destination)
-    (board / "USB_ID").write_bytes(USB_ID + b"\n")
-    for name in ("Image", "integrated-probe.dtb", "initramfs.cpio.gz", "boot.scr"):
-        (target / name).write_bytes(files[name])
-    with entry.open("xb") as destination:
-        destination.write(files["aml_autoscript"])
+    write_boot_files(usb, files)
 
 
 def main():

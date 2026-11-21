@@ -24,15 +24,4 @@ if load smsc && load meson-gxl; then
     load mdio-mux-meson-g12a || :
 fi
 
-if [ -L /sys/bus/platform/drivers/uwe_bsp/uwe-bsp ]; then
-    for n in 1 2 3 4 5 6; do
-        set -- /sys/bus/sdio/devices/*
-        [ -r "$1/vendor" ] && break
-        sleep 1
-    done
-    if [ -r "$1/vendor" ] && load rfkill && load cfg80211; then
-        load sprdwl_ng || :
-    fi
-fi
-
 exec /bin/w152d-usb-root

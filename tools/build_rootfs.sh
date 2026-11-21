@@ -64,7 +64,7 @@ mount -t sysfs -o ro sysfs "$ROOT/sys"
 mount --bind /etc/resolv.conf "$ROOT/etc/resolv.conf"
 printf 'Acquire::ForceIPv4 "true";\nAcquire::https::Timeout "45";\n' > "$ROOT/etc/apt/apt.conf.d/99w152d-build-ipv4"
 chroot "$ROOT" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::ForceIPv4=true -o Acquire::Languages=none -o Acquire::https::Timeout=30 -o Acquire::Retries=2 -o APT::Update::Error-Mode=any update
-chroot "$ROOT" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::ForceIPv4=true -o Acquire::https::Timeout=30 -y --no-install-recommends install busybox-static chrony openssh-server openssl iproute2 iw wpasupplicant ca-certificates e2fsprogs
+chroot "$ROOT" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::ForceIPv4=true -o Acquire::https::Timeout=30 -y --no-install-recommends install busybox-static chrony openssh-server openssl iproute2 iw wpasupplicant ca-certificates fdisk e2fsprogs
 chroot "$ROOT" apt-get clean
 rm -f "$ROOT/etc/apt/apt.conf.d/99w152d-build-ipv4"
 tar --numeric-owner -xpf "$OVERLAY" -C "$ROOT"

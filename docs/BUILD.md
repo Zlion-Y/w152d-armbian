@@ -7,8 +7,9 @@
 - 板级 USB 时钟和 PHY 源码放入内核的 `drivers/clk/` 并编入内核。
 - LED 使用 `drivers/gpio/w152d-ao-gpio.c`，将[该驱动](../mainline/drivers/w152d-ao-gpio.c)复制到内核树并应用 [Kbuild 补丁](../mainline/patches/w152d-ao-gpio-kbuild.patch)，配置启用 `GPIO_W152D_AO` 和 `LEDS_GPIO`。
 - 从同一内核树构建 ARM64 的 `Image` 及 xHCI、SMSC、Meson PHY、MDIO mux、rfkill、cfg80211 和 sprdwl_ng 模块。
+- 对可交付的内核，在 WCN 接管补丁之后应用 [外置无线固件补丁](../mainline/patches/w152d-wcn-external-firmware.patch)，从 Image 去掉供体内嵌的固件数组。
 
-打包需要 Linux 上的 Bash、Python 3、C 编译器、binutils、dtc、kmod、gzip，以及一份 ARM64 静态 BusyBox。用本机取得的无线固件准备以下文件，固件仅进入本地生成的 initramfs。
+打包需要 Linux 上的 Bash、Python 3、C 编译器、binutils、dtc、kmod、gzip，以及一份 ARM64 静态 BusyBox。给第三个参数传 `-` 可生成不含外置无线固件的 initramfs。需要无线时，把以下文件放到刷好的 U 盘 `w152d/firmware/`，或用该目录作为参数生成仅在本地使用的 initramfs。
 
 | 文件 | 输入来源 | 验收样本 SHA-256 |
 | --- | --- | --- |
@@ -18,7 +19,7 @@
 
 ```sh
 mkdir -p outputs
-bash tools/build_mainline_artifacts.sh /path/to/w152d-linux /path/to/busybox /path/to/firmware outputs/mainline-build
+bash tools/build_mainline_artifacts.sh /path/to/w152d-linux /path/to/busybox - outputs/mainline-build
 python tools/package_mainline_usb.py --artifacts outputs/mainline-build --output outputs/mainline-usb
 (cd outputs/mainline-usb && sha256sum -c SHA256SUMS)
 ```

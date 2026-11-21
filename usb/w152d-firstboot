@@ -4,10 +4,9 @@ umask 077
 BASE=/media/w152d-usb/${W152D_USB_DIR:-w152d}
 CONFIG=$BASE/config
 STATE=/var/lib/w152d
-mkdir -p "$STATE" /etc/wpa_supplicant /root/.ssh
+mkdir -p "$STATE" "$CONFIG" /etc/wpa_supplicant /root/.ssh
 chmod 700 /root/.ssh
-if [ ! -e "$STATE/provisioned" ]; then
-    test -s "$CONFIG/authorized_keys" || { echo 'Missing w152d/config/authorized_keys'; exit 1; }
+if [ ! -e "$STATE/provisioned" ] && [ -s "$CONFIG/authorized_keys" ]; then
     cp "$CONFIG/authorized_keys" /root/.ssh/authorized_keys
     chmod 600 /root/.ssh/authorized_keys
     if [ -s "$CONFIG/wpa_supplicant.conf" ]; then
@@ -29,4 +28,6 @@ if [ ! -s /etc/ssh/ssh_host_ed25519_key_w152d ]; then
 fi
 chmod 600 /etc/ssh/ssh_host_ed25519_key_w152d
 cp /etc/ssh/ssh_host_ed25519_key_w152d.pub "$CONFIG/ssh_host_ed25519_key.pub"
-echo 'First-boot configuration ready; SSH uses your public key'
+if [ ! -e "$STATE/provisioned" ]; then
+    echo 'Add your SSH public key to w152d/config/authorized_keys to enable login'
+fi

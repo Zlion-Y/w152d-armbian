@@ -10,6 +10,7 @@ FILES={
  'usr/local/libexec/w152d-udhcpc':'wifi/w152d-udhcpc',
  'usr/local/libexec/w152d-time':'wifi/w152d-time',
  'usr/local/libexec/w152d-leds':'usb/w152d-leds',
+ 'usr/local/libexec/w152d-grow-rootfs':'usb/w152d-grow-rootfs',
  'etc/ssh/sshd_config_w152d':'usb/sshd_config_w152d',
  'etc/chrony/chrony-w152d.conf':'usb/chrony-w152d.conf',
 }
