@@ -242,7 +242,7 @@
 +		ranges;
 +
 +		uart_b: serial@fe07a000 {
-+			compatible = "amlogic,meson-s4-uart";
++			compatible = "amlogic,meson-g12a-uart";
 +			reg = <0x0 0xfe07a000 0x0 0x18>;
 +			interrupts = <GIC_SPI 169 IRQ_TYPE_EDGE_RISING>;
 +			/* The pclk reference stands in for the firmware-enabled bus gate. */

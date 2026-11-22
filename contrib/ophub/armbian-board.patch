@@ -108,7 +108,7 @@ index 0000000..9df9616
 +LINUX=/zImage
 +INITRD=/uInitrd
 +FDT=/dtb/amlogic/meson-gxlx4-w152d.dtb
-+APPEND=root=LABEL=ROOTFS console=ttyS0,921600n8 net.ifnames=0
++APPEND=root=LABEL=ROOTFS console=ttyAML0,921600n8 net.ifnames=0
 diff --git a/build-armbian/armbian-files/different-files/w152d/rootfs/etc/armbian-board-release.conf b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/armbian-board-release.conf
 new file mode 100644
 index 0000000..cfb3e03

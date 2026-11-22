@@ -28,3 +28,5 @@ Wi-Fi 固件按[构建说明](../../docs/BUILD.md)取得，按板型放入测试
 离线试制使用 Armbian Bookworm ARM64 根文件系统和四个 ophub 格式的内核包。已运行 ophub 的分区创建、文件复制、内核替换及引导与根文件系统配置阶段。成品的 FAT32 与 ext4 检查通过，`uEnv.txt` 和 `fstab` 指向同一根分区 UUID，标准 initramfs 包含 xHCI 模块，`/sbin/init` 指向 systemd。头文件包已用 ARM64 外部测试模块验证。此轮未运行 GitHub Actions 的下载与发布阶段。
 
 对 ophub 试制镜像逐项验收 USB3 与三个 USB2 口冷启动、拔盘回到 Android、首次 ext4 扩容、systemd 服务管理、有线 DHCP、Wi-Fi 和双色灯。内核更新还需复测 `uInitrd` 与模块同版本，及更新后 U 盘引导。
+
+初版试制镜像实机通过 UUID 找到 ext4 根分区，但 Meson UART 与 8250 同时注册 `ttyS0`，导致 initramfs 无法从 `/dev/console` 交接。接入补丁改用与 G12A 相同的 UART 时钟分频模式及 `ttyAML0`。只替换 U 盘引导分区的 DTB 和 `uEnv.txt` 后，第一个 USB2 口（内置 Hub 路径 `3-1.3`）冷启动已到达 systemd 的多用户目标和串口登录页。SSH、journald、WPA supplicant 与前面板 LED 服务均已启动，SC2355 固件成功加载。
