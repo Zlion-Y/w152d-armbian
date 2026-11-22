@@ -104,11 +104,10 @@
 +obj-$(CONFIG_AMLOGIC_CRG) += usb3v3phy/
 --- a/arch/arm64/boot/dts/amlogic/Makefile
 +++ b/arch/arm64/boot/dts/amlogic/Makefile
-@@ -182,4 +182,4 @@
+@@ -181,3 +181,4 @@
+ # Experimental
  dtb-$(CONFIG_ARCH_MESON) += meson-gxbb-odroidc2-hifishield.dtb
  dtb-$(CONFIG_ARCH_MESON) += meson-gxbb-odroidc2-hifishield2.dtb
- 
--dtb-$(CONFIG_ARCH_MESON) += meson-gxlx4-w152d-integrated-probe.dtb
 +dtb-$(CONFIG_ARCH_MESON) += meson-gxlx4-w152d.dtb
 --- /dev/null
 +++ b/arch/arm64/boot/dts/amlogic/meson-gxlx4-w152d.dts

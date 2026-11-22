@@ -1,6 +1,6 @@
 # U-Boot USB 入口与恢复
 
-适用于 W152D / GXLX4 BT203 上验证过的原厂 U-Boot 2019.01。测试机已有 USB 优先入口，所以可以自动执行 FAT 根目录的 `aml_autoscript`。板级启动逻辑和 Linux 均在 U 盘上。
+适用于 W152D / GXLX4 BT203 上验证过的原厂 U-Boot 2019.01。按下文配置 USB 优先后，原厂 U-Boot 会先打开 USB3 和三个 USB2 口的供电，再扫描 U 盘并执行 FAT 根目录的 `aml_autoscript`。Linux 启动脚本和系统均在 U 盘上。
 
 ## 临时启动
 
@@ -59,7 +59,9 @@ run bootcmd
 
 `saveenv` 写入原机的持久 U-Boot 环境区。上述命令只调整 `bootcmd`，U-Boot 二进制、Android 启动镜像和系统分区沿用原件。需要完全保留 eMMC 原状的设备，可沿用既有 USB 优先入口或每次通过串口临时启动。
 
-要永久恢复内置优先，在 U-Boot 用 `setenv bootcmd '原先记录的完整命令'` 恢复原值并执行 `saveenv`。已核对本机出厂值是 `run storeboot` 时，直接用 `setenv bootcmd 'run storeboot'`。
+已用原厂 U-Boot 保存该命令并复位，实机自动从 USB2 启动到 Armbian systemd。
+
+要恢复修改前的启动顺序，在 U-Boot 用 `setenv bootcmd '原先记录的完整命令'` 恢复原值并执行 `saveenv`。
 
 ## 回到设备自带启动路径
 
