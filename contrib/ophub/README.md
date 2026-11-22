@@ -30,3 +30,5 @@ Wi-Fi 固件按[构建说明](../../docs/BUILD.md)取得，按板型放入测试
 对 ophub 试制镜像逐项验收 USB3 与三个 USB2 口冷启动、拔盘回到 Android、首次 ext4 扩容、systemd 服务管理、有线 DHCP、Wi-Fi 和双色灯。内核更新还需复测 `uInitrd` 与模块同版本，及更新后 U 盘引导。
 
 初版试制镜像实机通过 UUID 找到 ext4 根分区，但 Meson UART 与 8250 同时注册 `ttyS0`，导致 initramfs 无法从 `/dev/console` 交接。接入补丁改用与 G12A 相同的 UART 时钟分频模式及 `ttyAML0`。只替换 U 盘引导分区的 DTB 和 `uEnv.txt` 后，第一个 USB2 口（内置 Hub 路径 `3-1.3`）冷启动已到达 systemd 的多用户目标和串口登录页。SSH、journald、WPA supplicant 与前面板 LED 服务均已启动，SC2355 固件成功加载。
+
+同一只盘在 USB3 口也已启动。测试盘通过 `wpa_supplicant@wlan0` 和 `systemd-networkd` 接入 Wi-Fi，DHCP、网关和 SSH 公钥登录正常。一次常规重启后重新获得 DHCP 地址并通过无线再次登录，确认 PID 1 为 systemd、根文件系统为 USB 上的 ext4。该轮使用最小根文件系统缓存，首次自动扩容尚待验证。
