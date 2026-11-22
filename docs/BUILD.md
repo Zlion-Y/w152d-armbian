@@ -19,6 +19,8 @@ JOBS=8 bash tools/build_w152d_kernel.sh /path/to/linux-6.12.tar.xz outputs/w152d
 
 该候选基线已编译 Image、DTB 和七个启动模块，也通过了本项目的 USB 打包。当前用户空间沿用本项目的 Armbian Bookworm。此版还需实机验收，ophub 板型接入和其内核包格式另行处理。
 
+标准 systemd 用户空间和 ophub 板型打包的后续改动见[接入补丁](../contrib/ophub)。
+
 打包需要 Linux 上的 Bash、Python 3、C 编译器、binutils、dtc、kmod、gzip，以及一份 ARM64 静态 BusyBox。给第三个参数传 `-` 可生成不含外置无线固件的 initramfs。需要无线时，把以下文件放到刷好的 U 盘 `w152d/firmware/`，或用该目录作为参数生成仅在本地使用的 initramfs。
 
 | 文件 | 输入来源 | 验收样本 SHA-256 |

@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-# Build the W152D kernel and boot modules from a pinned source archive.
+# Build W152D from a pinned source archive.
 set -euo pipefail
 
+ophub=no
+if [[ ${1:-} == --ophub ]]; then
+    ophub=yes
+    shift
+fi
 if [[ $# != 2 ]]; then
-    echo "Usage: bash $0 kernel-source-archive new-build-directory" >&2
+    echo "Usage: bash $0 [--ophub] kernel-source-archive new-build-directory" >&2
     exit 2
 fi
 
@@ -23,6 +28,10 @@ case ${actual%% *} in
         exit 1
         ;;
 esac
+if [[ $ophub == yes && $localversion != -w152d ]]; then
+    echo "--ophub requires the pinned 6.12.118 source archive" >&2
+    exit 1
+fi
 
 kernel="$work/linux-6.12"
 build="$work/build"
@@ -46,17 +55,30 @@ install -m 0644 "$repo/mainline/drivers/w152d-usb-clock-probe.c" \
     "$repo/mainline/drivers/w152d-usb3-phy-probe.c" "$kernel/drivers/clk/"
 install -m 0644 "$repo/mainline/drivers/w152d-ao-gpio.c" "$kernel/drivers/gpio/"
 dts_dir="$kernel/arch/arm64/boot/dts/amlogic"
-install -m 0644 "$repo"/mainline/dts/*.dts* "$dts_dir/"
-dtb=meson-gxlx4-w152d-integrated-probe.dtb
-printf '\ndtb-$(CONFIG_ARCH_MESON) += %s\n' "$dtb" >>"$dts_dir/Makefile"
+if [[ $ophub == yes ]]; then
+    "${apply[@]}" "$repo/contrib/ophub/kernel-board.patch"
+    dtb=meson-gxlx4-w152d.dtb
+else
+    install -m 0644 "$repo"/mainline/dts/*.dts* "$dts_dir/"
+    dtb=meson-gxlx4-w152d-integrated-probe.dtb
+    printf '\ndtb-$(CONFIG_ARCH_MESON) += %s\n' "$dtb" >>"$dts_dir/Makefile"
+fi
 
 install -m 0644 "$repo/mainline/kernel.config" "$build/.config"
 "$kernel/scripts/config" --file "$build/.config" --disable LOCALVERSION_AUTO
+if [[ $ophub == yes ]]; then
+    # The pinned source has an R-Car sound API mismatch unrelated to Meson.
+    "$kernel/scripts/config" --file "$build/.config" --disable SND_SOC_RCAR
+fi
 export ARCH=arm64
 export CROSS_COMPILE=${CROSS_COMPILE-aarch64-linux-gnu-}
 make_args=(-C "$kernel" O="$build" LOCALVERSION="$localversion")
 make "${make_args[@]}" olddefconfig
 make "${make_args[@]}" -j "${JOBS:-$(nproc)}" Image "amlogic/$dtb"
+if [[ $ophub == yes ]]; then
+    make "${make_args[@]}" -j "${JOBS:-$(nproc)}" modules
+    exit 0
+fi
 make "${make_args[@]}" -j "${JOBS:-$(nproc)}" \
     drivers/usb/host/xhci-plat-hcd.ko \
     drivers/net/phy/smsc.ko \

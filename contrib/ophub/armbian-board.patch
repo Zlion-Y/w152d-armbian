@@ -1,0 +1,305 @@
+diff --git a/.github/workflows/build-armbian-arm64-server-image.yml b/.github/workflows/build-armbian-arm64-server-image.yml
+index 28b48b7..5b41f1f 100644
+--- a/.github/workflows/build-armbian-arm64-server-image.yml
++++ b/.github/workflows/build-armbian-arm64-server-image.yml
+@@ -263,6 +263,7 @@ on:
+           - tvi3315a
+           - vontar-h618
+           - vplus
++          - w152d
+           - wocyber-a3
+           - wxy-oect
+           - wxy-oect-mod
+diff --git a/.github/workflows/build-armbian-using-official-image.yml b/.github/workflows/build-armbian-using-official-image.yml
+index 732ea01..711de0f 100644
+--- a/.github/workflows/build-armbian-using-official-image.yml
++++ b/.github/workflows/build-armbian-using-official-image.yml
+@@ -256,6 +256,7 @@ on:
+           - tvi3315a
+           - vontar-h618
+           - vplus
++          - w152d
+           - wocyber-a3
+           - wxy-oect
+           - wxy-oect-mod
+diff --git a/.github/workflows/build-armbian-using-releases-files.yml b/.github/workflows/build-armbian-using-releases-files.yml
+index 9cfd7de..0b2ae15 100644
+--- a/.github/workflows/build-armbian-using-releases-files.yml
++++ b/.github/workflows/build-armbian-using-releases-files.yml
+@@ -263,6 +263,7 @@ on:
+           - tvi3315a
+           - vontar-h618
+           - vplus
++          - w152d
+           - wocyber-a3
+           - wxy-oect
+           - wxy-oect-mod
+diff --git a/build-armbian/armbian-files/common-files/etc/model_database.conf b/build-armbian/armbian-files/common-files/etc/model_database.conf
+index 11ea355..238b3b6 100644
+--- a/build-armbian/armbian-files/common-files/etc/model_database.conf
++++ b/build-armbian/armbian-files/common-files/etc/model_database.conf
+@@ -212,6 +212,7 @@
+ # 1.ID  2.MODEL                                        3.SOC     4.FDTFILE                                 5.UBOOT_OVERLOAD              6.MAINLINE_UBOOT                     7.BOOTLOADER_IMG                 8.DESCRIPTION                               9.KERNEL_TAGS          10.PLATFORM  11.FAMILY     12.BOOT_CONF     13.CONTRIBUTORS                                       14.BOARD                   15.BUILD
+ #-------+----------------------------------------------+---------+-----------------------------------------+-----------------------------+------------------------------------+--------------------------------+-------------------------------------------+----------------------+------------+-------------+----------------+-----------------------------------------------------+--------------------------+----------
+ 601     :X96-Max-Plus-Ultra                            :s905x4   :meson-sc2-x96-max-plus-ultra.dtb         :u-boot-s905x4.bin            :NA                                  :NA                              :4GB-Mem,64GB-eMMC,100Mb-Nic,W150S1-wifi    :s905x4/6.18.y         :amlogic     :meson-sc2    :boot.config     :AmakerGame                                           :x96-max-plus-ultra        :yes
++602     :ZTE-W152D                                     :s905l4   :meson-gxlx4-w152d.dtb                   :NA                           :NA                                  :NA                              :2GB-RAM,64GB-eMMC,100Mb-Nic,SC2355-wifi    :stable/6.12.y         :amlogic     :meson-gxlx4  :uEnv.txt        :Zlion-Y                                              :w152d                     :no
+ 
+ 
+ # Amlogic GXBB Family
+diff --git a/build-armbian/armbian-files/common-files/usr/sbin/armbian-update b/build-armbian/armbian-files/common-files/usr/sbin/armbian-update
+index 369fb57..402a7b4 100755
+--- a/build-armbian/armbian-files/common-files/usr/sbin/armbian-update
++++ b/build-armbian/armbian-files/common-files/usr/sbin/armbian-update
+@@ -874,6 +874,7 @@ update_tar_kernel() {
+ 
+ # Update the U-Boot bootloader
+ update_uboot() {
++    [[ "${VENDOR_USB_BOOT:-no}" != "yes" ]] || return 0
+     echo -e "${STEPS} Updating U-Boot bootloader..."
+ 
+     # With TEXT_OFFSET patch is [ 0108 ], without TEXT_OFFSET patch is [ 0000 ] and need to ues [ UBOOT_OVERLOAD ] file.
+diff --git a/build-armbian/armbian-files/different-files/w152d/bootfs/aml_autoscript.cmd b/build-armbian/armbian-files/different-files/w152d/bootfs/aml_autoscript.cmd
+new file mode 100644
+index 0000000..5f1c308
+--- /dev/null
++++ b/build-armbian/armbian-files/different-files/w152d/bootfs/aml_autoscript.cmd
+@@ -0,0 +1,35 @@
++echo "Armbian: W152D vendor USB boot"
++# The vendor recovery command already initialized USB and selected disk 0.
++if fatload usb 0:1 0x030c0000 uEnv.txt && env import -t 0x030c0000 ${filesize} LINUX INITRD FDT APPEND; then
++    if fatload usb 0:1 0x08600000 ${LINUX} && itest ${filesize} -le 0x03200000; then
++        if fatload usb 0:1 0x0b800000 ${INITRD} && itest ${filesize} -le 0x01800000; then
++            if fatload usb 0:1 0x0d000000 ${FDT} && fdt addr 0x0d000000 && fdt resize 0x10000; then
++                gpio clear GPIOAO_4
++                gpio clear GPIOAO_5
++                gpio clear GPIOAO_9
++                gpio clear GPIOAO_7
++                powerset 8 0
++                if itest.l *0xfe00400c == 0; then
++                    mw.l 0xfe00400c 0x00111111 1
++                fi
++                if itest.l *0xfe00400c == 0x00111111; then
++                    gpio set GPIOX_6
++                    setenv armbian_old_bootargs "${bootargs}"
++                    setenv armbian_old_fdt_high "${fdt_high}"
++                    setenv armbian_old_initrd_high "${initrd_high}"
++                    setenv fdt_high 0xffffffffffffffff
++                    setenv initrd_high 0xffffffffffffffff
++                    setenv bootargs "${APPEND}"
++                    booti 0x08600000 0x0b800000 0x0d000000
++                    setenv bootargs "${armbian_old_bootargs}"
++                    setenv fdt_high "${armbian_old_fdt_high}"
++                    setenv initrd_high "${armbian_old_initrd_high}"
++                    setenv armbian_old_bootargs
++                    setenv armbian_old_fdt_high
++                    setenv armbian_old_initrd_high
++                fi
++            fi
++        fi
++    fi
++fi
++echo "Armbian: W152D USB boot returned to the vendor bootloader"
+diff --git a/build-armbian/armbian-files/different-files/w152d/bootfs/uEnv.txt b/build-armbian/armbian-files/different-files/w152d/bootfs/uEnv.txt
+new file mode 100644
+index 0000000..9df9616
+--- /dev/null
++++ b/build-armbian/armbian-files/different-files/w152d/bootfs/uEnv.txt
+@@ -0,0 +1,4 @@
++LINUX=/zImage
++INITRD=/uInitrd
++FDT=/dtb/amlogic/meson-gxlx4-w152d.dtb
++APPEND=root=LABEL=ROOTFS console=ttyS0,921600n8 net.ifnames=0
+diff --git a/build-armbian/armbian-files/different-files/w152d/rootfs/etc/armbian-board-release.conf b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/armbian-board-release.conf
+new file mode 100644
+index 0000000..cfb3e03
+--- /dev/null
++++ b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/armbian-board-release.conf
+@@ -0,0 +1,39 @@
++# The vendor USB recovery command sources aml_autoscript directly.
++amlogic_vendor_usb_boot="yes"
++adjust_kernel_files="yes"
++
++adjust_kernel_files_cmd() {
++    local boot_script="${tag_bootfs}/aml_autoscript"
++
++    mkimage -A arm -O linux -T script -C none -n 'Armbian USB boot' \
++        -d "${tag_bootfs}/aml_autoscript.cmd" "${boot_script}" ||
++        error_msg "Cannot compile the W152D USB boot script."
++}
++
++finalize_board_image_cmd() {
++    local initrd="initrd.img-${kernel_name}"
++    local packed="uInitrd-${kernel_name}"
++
++    # Generate a standard initramfs using the selected target distribution.
++    unshare --mount --propagation private bash -e -s -- "${tag_rootfs}" "${tag_bootfs}" "${kernel_name}" <<'BUILD_INITRAMFS' ||
++root="$1"
++boot="$2"
++release="$3"
++mkdir -p "$root"/{boot,dev,proc,sys}
++mount --bind "$boot" "$root/boot"
++mount --bind /dev "$root/dev"
++mount -t proc proc "$root/proc"
++mount -t sysfs sysfs "$root/sys"
++chroot "$root" /usr/sbin/mkinitramfs -o "/boot/initrd.img-$release" "$release"
++BUILD_INITRAMFS
++        error_msg "Cannot generate the W152D USB initramfs."
++
++    mkimage -A arm64 -O linux -T ramdisk -C none -n 'Armbian initramfs' \
++        -d "${tag_bootfs}/${initrd}" "${tag_bootfs}/${packed}" ||
++        error_msg "Cannot wrap the W152D initramfs."
++    [[ "$(stat -c %s "${tag_bootfs}/${packed}")" -le $((0x01800000)) ]] ||
++        error_msg "The W152D initramfs exceeds the vendor USB load window."
++    cp -f "${tag_bootfs}/${packed}" "${tag_bootfs}/uInitrd"
++    systemctl --root="${tag_rootfs}" enable armbian-front-panel.service ||
++        error_msg "Cannot enable the front-panel LED service."
++}
+diff --git a/build-armbian/armbian-files/different-files/w152d/rootfs/etc/default/armbian-front-panel b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/default/armbian-front-panel
+new file mode 100644
+index 0000000..e74ede8
+--- /dev/null
++++ b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/default/armbian-front-panel
+@@ -0,0 +1,5 @@
++POWER_READY=green:power
++POWER_BOOT=red:power
++LINK_UP=green:lan
++LINK_DOWN=red:lan
++INTERFACE=eth0
+diff --git a/build-armbian/armbian-files/different-files/w152d/rootfs/etc/initramfs-tools/conf.d/w152d b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/initramfs-tools/conf.d/w152d
+new file mode 100644
+index 0000000..3664a98
+--- /dev/null
++++ b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/initramfs-tools/conf.d/w152d
+@@ -0,0 +1,2 @@
++# The vendor bootloader has a 24 MiB initramfs load window.
++MODULES=list
+diff --git a/build-armbian/armbian-files/different-files/w152d/rootfs/etc/initramfs-tools/hooks/w152d-usb-root b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/initramfs-tools/hooks/w152d-usb-root
+new file mode 100755
+index 0000000..be5d4ab
+--- /dev/null
++++ b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/initramfs-tools/hooks/w152d-usb-root
+@@ -0,0 +1,9 @@
++#!/bin/sh
++set -e
++
++case "$1" in
++    prereqs) exit 0 ;;
++esac
++
++. /usr/share/initramfs-tools/hook-functions
++force_load xhci-plat-hcd
+diff --git a/build-armbian/armbian-files/different-files/w152d/rootfs/etc/modules-load.d/w152d.conf b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/modules-load.d/w152d.conf
+new file mode 100644
+index 0000000..3c2f97e
+--- /dev/null
++++ b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/modules-load.d/w152d.conf
+@@ -0,0 +1,4 @@
++smsc
++meson-gxl
++mdio-mux-meson-g12a
++sprdwl_ng
+diff --git a/build-armbian/armbian-files/different-files/w152d/rootfs/etc/systemd/system/armbian-front-panel.service b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/systemd/system/armbian-front-panel.service
+new file mode 100644
+index 0000000..6049c6f
+--- /dev/null
++++ b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/systemd/system/armbian-front-panel.service
+@@ -0,0 +1,13 @@
++[Unit]
++Description=Armbian front-panel power and Ethernet LEDs
++After=network.target ssh.service ssh.socket
++
++[Service]
++Type=exec
++EnvironmentFile=/etc/default/armbian-front-panel
++ExecStart=/usr/libexec/armbian-front-panel
++Restart=on-failure
++RestartSec=3s
++
++[Install]
++WantedBy=multi-user.target
+diff --git a/build-armbian/armbian-files/different-files/w152d/rootfs/usr/libexec/armbian-front-panel b/build-armbian/armbian-files/different-files/w152d/rootfs/usr/libexec/armbian-front-panel
+new file mode 100755
+index 0000000..b3cac3f
+--- /dev/null
++++ b/build-armbian/armbian-files/different-files/w152d/rootfs/usr/libexec/armbian-front-panel
+@@ -0,0 +1,27 @@
++#!/bin/sh
++set -eu
++
++set_led() {
++    led="/sys/class/leds/$1/brightness"
++    [ -w "$led" ] || return 0
++    printf '%s\n' "$2" >"$led"
++}
++
++set_led "$POWER_BOOT" 0
++set_led "$POWER_READY" 1
++
++previous=
++while :; do
++    carrier=$(cat "/sys/class/net/$INTERFACE/carrier" 2>/dev/null) || carrier=0
++    if [ "$carrier" != "$previous" ]; then
++        if [ "$carrier" = 1 ]; then
++            set_led "$LINK_DOWN" 0
++            set_led "$LINK_UP" 1
++        else
++            set_led "$LINK_UP" 0
++            set_led "$LINK_DOWN" 1
++        fi
++        previous=$carrier
++    fi
++    sleep 1
++done
+diff --git a/build-armbian/armbian-files/platform-files/amlogic/rootfs/usr/sbin/armbian-install b/build-armbian/armbian-files/platform-files/amlogic/rootfs/usr/sbin/armbian-install
+index 6348527..7fd118c 100755
+--- a/build-armbian/armbian-files/platform-files/amlogic/rootfs/usr/sbin/armbian-install
++++ b/build-armbian/armbian-files/platform-files/amlogic/rootfs/usr/sbin/armbian-install
+@@ -73,6 +73,8 @@ error_msg() {
+ check_release_file() {
+     [[ -s "${ophub_release_file}" ]] || error_msg "[ ${ophub_release_file} ] file is missing!"
+     source "${ophub_release_file}"
++    [[ "${VENDOR_USB_BOOT:-no}" != "yes" ]] ||
++        error_msg "This board uses the vendor bootloader and supports USB boot only."
+     [[ " ${without_ampart[*]} " =~ " ${SOC} " ]] && default_ampart="no"
+ }
+ 
+diff --git a/rebuild b/rebuild
+index 239ca7a..57e018e 100755
+--- a/rebuild
++++ b/rebuild
+@@ -751,6 +751,8 @@ make_image() {
+     # Reset default parameters
+     write_board_file="no"
+     adjust_kernel_files="no"
++    amlogic_vendor_usb_boot="no"
++    unset -f finalize_board_image_cmd
+     # Check the personalization settings of this board
+     board_release="${different_files}/${board}/rootfs/${board_release_file}"
+     [[ -f "${board_release}" ]] && source ${board_release}
+@@ -972,7 +974,7 @@ refactor_bootfs() {
+     cd "${tag_bootfs}"
+ 
+     # Process Amlogic series boot partition files
+-    [[ "${PLATFORM}" == "amlogic" && "${need_overload}" == "yes" ]] && {
++    [[ "${PLATFORM}" == "amlogic" && "${amlogic_vendor_usb_boot}" != "yes" && "${need_overload}" == "yes" ]] && {
+         if [[ -n "${UBOOT_OVERLOAD}" && -f "${UBOOT_OVERLOAD}" ]]; then
+             cp -f ${UBOOT_OVERLOAD} u-boot.ext
+             chmod +x u-boot.ext
+@@ -1333,6 +1335,7 @@ refactor_rootfs() {
+         "DISK_TYPE='usb'"
+         "AMPART_STATUS='no'"
+         "MLUBOOT_STATUS='no'"
++        "VENDOR_USB_BOOT='${amlogic_vendor_usb_boot}'"
+         "MAINLINE_UBOOT='${RECORD_MAINLINE_UBOOT}'"
+         "BOOTLOADER_IMG='${RECORD_BOOTLOADER_IMG}'"
+         "BUILD_REPOSITORY='github.com/armbian/build'"
+@@ -1410,6 +1413,9 @@ loop_rebuild() {
+                     replace_kernel
+                     refactor_bootfs
+                     refactor_rootfs
++                    if declare -F finalize_board_image_cmd >/dev/null; then
++                        finalize_board_image_cmd
++                    fi
+                     clean_tmp
+ 
+                     echo -e "(${j}.${i}) Armbian built successfully. \n"
