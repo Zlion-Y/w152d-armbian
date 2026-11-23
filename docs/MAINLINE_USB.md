@@ -1,5 +1,7 @@
 # W152D Linux 6.12 U 盘启动
 
+本文对应本仓库的早期 USB 预览版。基于 ophub 的 systemd 镜像和 eMMC 适配见 [ophub 接入状态](../contrib/ophub/README.md)。
+
 W152D / GXLX4 (S905L4) 由原厂 U-Boot 2019.01 的 `recovery_from_udisk` 入口启动。整盘镜像使用第一分区 FAT32 引导、第二分区 ext4 挂载根文件系统；首次启动扩展 ext4 以使用 U 盘的剩余容量。制盘和临时启动不写入原机 eMMC。自动 USB 启动环境的设置见 [U-Boot 启动说明](USB_BOOT_AND_RECOVERY.md)。
 
 ## 制盘

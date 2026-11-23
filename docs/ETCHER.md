@@ -1,5 +1,7 @@
 # 用 balenaEtcher 制作 W152D 启动盘
 
+下文的 128 MiB 启动分区、自定义启动标记和 SSH 配置对应本仓库的早期 USB 预览版。ophub 安装镜像的适用范围见 [eMMC 安装与验收](EMMC_INSTALL.md)。
+
 此镜像面向 W152D / GXLX4 BT203。MBR 的第一分区是 128 MiB FAT32，保存 Linux 6.12 启动文件和用户配置；第二分区是 Armbian Bookworm 的 ext4 根文件系统。使用至少 4 GB、逻辑扇区为 512 字节的 USB 大容量存储设备。首次启动将第二分区和 ext4 扩到 U 盘的剩余容量。
 
 启动后可用 `findmnt /` 和 `df -h /` 核对挂载与容量。扩容只修改同一 USB 盘的第二分区，保留第一分区。扩容出错时，系统仍可启动，日志在 `/run/w152d-grow-rootfs.log`；未完成的扩容会在下次启动时重试。大于约 2 TiB 的设备超出当前 MBR 扩容范围。
