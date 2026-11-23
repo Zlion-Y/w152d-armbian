@@ -30448,10 +30448,12 @@ index 000000000..3e52d56c3
 +sdiohal-objs += $(sdiohal-c-objs)
 diff --git a/drivers/net/wireless/uwe5622/unisocwcn/sdio/sdio_v3.c b/drivers/net/wireless/uwe5622/unisocwcn/sdio/sdio_v3.c
 new file mode 100644
-index 000000000..3ee781910
+index 000000000..2fa2f27ca
 --- /dev/null
 +++ b/drivers/net/wireless/uwe5622/unisocwcn/sdio/sdio_v3.c
-@@ -0,0 +1,197 @@
+@@ -0,0 +1,202 @@
++#include <linux/string.h>
++#include <linux/of.h>
 +#include <wcn_bus.h>
 +
 +#include "bus_common.h"
@@ -30593,7 +30595,10 @@ index 000000000..3ee781910
 +{
 +#ifdef CONFIG_WCN_SLP
 +#ifdef CONFIG_CPLOG_DEBUG
-+	sdiohal_info("%s entry\n", __func__);
++	if (of_machine_is_compatible("amlogic,gxlx4-s905l4-w150d"))
++		pr_debug("sdiohal:%s entry\n", __func__);
++	else
++		sdiohal_info("%s entry\n", __func__);
 +#endif
 +	slp_mgr_drv_sleep(subsys, false);
 +	slp_mgr_wakeup(subsys);
