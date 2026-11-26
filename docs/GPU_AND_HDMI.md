@@ -36,3 +36,7 @@
 
 - **HDMI KMS 与终端输出**：`/dev/dri/card0`（`meson`）与 `/dev/fb0`（`mesondrmfb`）正常创建，`card0-HDMI-A-1` 状态为 `connected` / `enabled`，完整识别外接显示器 256 字节 EDID，硬件 VSync 中断稳定触发，HDMI 屏幕正常显示 `1920x1080@60Hz` `tty1` 登录界面。
 - **Mali-450 MP2 3D 加速与调频**：`/dev/dri/card1` 与 `/dev/dri/renderD128`（`lima 1.1.0`）正常初始化 GP、PP0、PP1 与双 L2 缓存；`devfreq` `simple_ondemand` 调频正常（空闲 `125 MHz`，动态覆盖 `125 ~ 800 MHz`）。
+- **关联稳定性与日志修复**：
+  - 设备树为 `gpu@fe400000` 提供常开 `regulator-mali`（`mali-supply`），消除 `lima` 启动时 `_opp_set_regulators: no regulator (mali) found` 报错；并通过模块顺序固定 HDMI KMS 为 `/dev/dri/card0`、Mali-450 为 `/dev/dri/card1`。
+  - S905L4 内置百兆 PHY 实测 MDIO ID 为 `0x01803300`，在 `6.12.x-ophub` 下因 `meson-gxl` 使用 `PHY_ID_MATCH_EXACT(0x01803301)` 会回退到 `Generic PHY` 并跳过 `w152d_g12a_phy_config_init` 模拟校准导致负载断连；设备树 `ethernet-phy@8` 显式声明 `compatible = "ethernet-phy-id0180.3301", "ethernet-phy-ieee802.3-c22"` 后恢复匹配。
+  - `install.sh` 自动写入 `/etc/unisoc_cp2log_config.txt` 将展锐 WCN CP2 日志限制为 `1 MiB` 内存盘循环写入（`/dev/shm`），消除启动时配置文件缺失报错与 `/etc/unisoc_cp2log_0.txt` 持续刷写闪存问题。

@@ -42,8 +42,18 @@ install -m 0644 \
     "${EXTRA_DIR}/"
 depmod -a "${KREL}"
 
-echo 'softdep lima pre: governor_simpleondemand w152d_gpu_clk' > /etc/modprobe.d/w152d-gpu-hdmi.conf
-printf 'w152d_dt_overlay\nw152d_gpu_clk\nlima\nw152d_drm\n' > /etc/modules-load.d/w152d-gpu-hdmi.conf
+# Ensure w152d_drm registers /dev/dri/card0 (KMS display) before lima registers /dev/dri/card1 (3D GPU)
+echo 'softdep lima pre: governor_simpleondemand w152d_gpu_clk w152d_drm' > /etc/modprobe.d/w152d-gpu-hdmi.conf
+printf 'w152d_dt_overlay\nw152d_gpu_clk\nw152d_drm\nlima\n' > /etc/modules-load.d/w152d-gpu-hdmi.conf
+
+# Redirect Unisoc WCN CP2 debug logs to tmpfs (/dev/shm, 1 MiB ring) to stop /etc flash wear & boot errors
+rm -f /etc/unisoc_cp2log_[0-9]*.txt /etc/unisoc_cp2mem_*.mem
+cat > /etc/unisoc_cp2log_config.txt <<'EOF'
+wcn_cp2_log_limit_size=1M;
+wcn_cp2_file_max_num=1;
+wcn_cp2_file_cover_old=true;
+wcn_cp2_log_path="/dev/shm";
+EOF
 
 if [[ -d /boot/dtb/amlogic ]]; then
     for dtb in meson-gxlx4-w152d.dtb meson-gxlx4-w152d-emmc.dtb; do
@@ -67,8 +77,8 @@ if [[ "${KREL}" == "$(uname -r)" ]]; then
     echo "[*] Activating GPU and HDMI KMS modules live..."
     modprobe w152d_dt_overlay || true
     modprobe w152d_gpu_clk
-    modprobe lima || true
     modprobe w152d_drm
+    modprobe lima || true
     echo "[+] Live status:"
     ls -l /dev/dri /dev/fb0 2>/dev/null || true
 fi

@@ -5,6 +5,14 @@
 	fragment@0 {
 		target-path = "/";
 		__overlay__ {
+			vdd_gpu: regulator-mali {
+				compatible = "regulator-fixed";
+				regulator-name = "vdd-gpu";
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <900000>;
+				regulator-always-on;
+			};
+
 			gpu_opp_table: gpu-opp-table {
 				compatible = "operating-points-v2";
 				opp-shared;
@@ -68,6 +76,7 @@
 				interrupt-names = "gp", "gpmmu", "pp", "pmu", "pp0", "ppmmu0", "pp1", "ppmmu1";
 				clocks = <&mali_clk 0>, <&mali_clk 1>;
 				clock-names = "bus", "core";
+				mali-supply = <&vdd_gpu>;
 				switch-delay = <0xffff>;
 				operating-points-v2 = <&gpu_opp_table>;
 			};
