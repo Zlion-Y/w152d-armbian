@@ -9,10 +9,38 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/slab.h>
 
 #include "w152d_overlay_dtbo.h"
 
 static int w152d_ovcs_id = -1;
+
+static void __init w152d_fixup_opp_microvolt(void)
+{
+	struct device_node *table, *opp;
+	__be32 *val;
+	struct property *prop;
+
+	table = of_find_node_by_path("/gpu-opp-table");
+	if (!table)
+		return;
+
+	for_each_child_of_node(table, opp) {
+		if (of_find_property(opp, "opp-microvolt", NULL))
+			continue;
+		prop = kzalloc(sizeof(*prop), GFP_KERNEL);
+		val = kmalloc(sizeof(__be32), GFP_KERNEL);
+		if (prop && val) {
+			*val = cpu_to_be32(900000);
+			prop->name = kstrdup("opp-microvolt", GFP_KERNEL);
+			prop->length = sizeof(__be32);
+			prop->value = val;
+			if (prop->name)
+				of_add_property(opp, prop);
+		}
+	}
+	of_node_put(table);
+}
 
 static int __init w152d_dt_overlay_init(void)
 {
@@ -22,6 +50,7 @@ static int __init w152d_dt_overlay_init(void)
 	np = of_find_compatible_node(NULL, NULL, "amlogic,w152d-vpu-drm");
 	if (np) {
 		of_node_put(np);
+		w152d_fixup_opp_microvolt();
 		pr_info("w152d_dt_overlay: GPU & HDMI nodes already present in base DTB\n");
 		return 0;
 	}

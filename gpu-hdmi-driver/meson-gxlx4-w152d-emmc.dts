@@ -142,30 +142,37 @@
 
 		opp-125000000 {
 			opp-hz = <0x00 0x07735940>;
+			opp-microvolt = <0xdbba0>;
 		};
 
 		opp-250000000 {
 			opp-hz = <0x00 0x0ee6b280>;
+			opp-microvolt = <0xdbba0>;
 		};
 
 		opp-285714285 {
 			opp-hz = <0x00 0x1107a76d>;
+			opp-microvolt = <0xdbba0>;
 		};
 
 		opp-400000000 {
 			opp-hz = <0x00 0x17d78400>;
+			opp-microvolt = <0xdbba0>;
 		};
 
 		opp-500000000 {
 			opp-hz = <0x00 0x1dcd6500>;
+			opp-microvolt = <0xdbba0>;
 		};
 
 		opp-666666666 {
 			opp-hz = <0x00 0x27bc86aa>;
+			opp-microvolt = <0xdbba0>;
 		};
 
 		opp-800000000 {
 			opp-hz = <0x00 0x2faf0800>;
+			opp-microvolt = <0xdbba0>;
 		};
 	};
 
