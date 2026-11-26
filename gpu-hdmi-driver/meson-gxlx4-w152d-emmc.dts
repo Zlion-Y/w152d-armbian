@@ -1,0 +1,469 @@
+/dts-v1/;
+
+/ {
+	model = "ZTE W152D";
+	compatible = "amlogic,gxlx4-s905l4-w150d", "amlogic,gxlx4";
+	#address-cells = <0x02>;
+	#size-cells = <0x02>;
+	interrupt-parent = <0x01>;
+
+	aliases {
+		serial0 = "/soc/serial@fe07a000";
+		mmc0 = "/soc/mmc@fe08c000";
+		mmc1 = "/soc/mmc@fe088000";
+	};
+
+	chosen {
+		stdout-path = "serial0:921600n8";
+		#address-cells = <0x02>;
+		#size-cells = <0x02>;
+		ranges;
+
+		framebuffer@7f000000 {
+			compatible = "simple-framebuffer";
+			reg = <0x00 0x7f000000 0x00 0x5eec00>;
+			width = <1920>;
+			height = <1080>;
+			stride = <5760>;
+			format = "r8g8b8";
+			status = "okay";
+		};
+	};
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x00 0x00 0x00 0x7f900000>;
+	};
+
+	reserved-memory {
+		#address-cells = <0x02>;
+		#size-cells = <0x02>;
+		ranges;
+
+		iotrace@4f00000 {
+			reg = <0x00 0x4f00000 0x00 0x100000>;
+			no-map;
+		};
+
+		secmon@5000000 {
+			reg = <0x00 0x5000000 0x00 0x3400000>;
+			no-map;
+		};
+
+		ramoops@8400000 {
+			reg = <0x00 0x8400000 0x00 0x100000>;
+			no-map;
+		};
+
+		uboot-log@11000000 {
+			reg = <0x00 0x11000000 0x00 0x40000>;
+			no-map;
+		};
+
+		firmware-framebuffer@7f000000 {
+			reg = <0x00 0x7f000000 0x00 0x800000>;
+			no-map;
+		};
+	};
+
+	cpus {
+		#address-cells = <0x02>;
+		#size-cells = <0x00>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a55";
+			reg = <0x00 0x00>;
+			enable-method = "psci";
+		};
+
+		cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a55";
+			reg = <0x00 0x01>;
+			enable-method = "psci";
+		};
+
+		cpu@2 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a55";
+			reg = <0x00 0x02>;
+			enable-method = "psci";
+		};
+
+		cpu@3 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a55";
+			reg = <0x00 0x03>;
+			enable-method = "psci";
+		};
+	};
+
+	psci {
+		compatible = "arm,psci-0.2";
+		method = "smc";
+	};
+
+	timer {
+		compatible = "arm,armv8-timer";
+		interrupts = <0x01 0x0d 0xf08 0x01 0x0e 0xf08 0x01 0x0b 0xf08 0x01 0x0a 0xf08>;
+	};
+
+	interrupt-controller@fff01000 {
+		compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
+		#interrupt-cells = <0x03>;
+		#address-cells = <0x00>;
+		interrupt-controller;
+		reg = <0x00 0xfff01000 0x00 0x1000 0x00 0xfff02000 0x00 0x100>;
+		interrupts = <0x01 0x09 0xf04>;
+		phandle = <0x01>;
+	};
+
+	clock-24000000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0x00>;
+		clock-frequency = <0x16e3600>;
+		phandle = <0x02>;
+	};
+
+	gpu-opp-table {
+		compatible = "operating-points-v2";
+		opp-shared;
+		phandle = <0x21>;
+
+		opp-125000000 {
+			opp-hz = <0x00 0x07735940>;
+		};
+
+		opp-250000000 {
+			opp-hz = <0x00 0x0ee6b280>;
+		};
+
+		opp-285714285 {
+			opp-hz = <0x00 0x1107a76d>;
+		};
+
+		opp-400000000 {
+			opp-hz = <0x00 0x17d78400>;
+		};
+
+		opp-500000000 {
+			opp-hz = <0x00 0x1dcd6500>;
+		};
+
+		opp-666666666 {
+			opp-hz = <0x00 0x27bc86aa>;
+		};
+
+		opp-800000000 {
+			opp-hz = <0x00 0x2faf0800>;
+		};
+	};
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <0x02>;
+		#size-cells = <0x02>;
+		ranges;
+
+		serial@fe07a000 {
+			compatible = "amlogic,meson-g12a-uart";
+			reg = <0x00 0xfe07a000 0x00 0x18>;
+			interrupts = <0x00 0xa9 0x01>;
+			clocks = <0x02 0x02 0x02>;
+			clock-names = "xtal", "pclk", "baud";
+			phandle = <0x0f>;
+		};
+
+		ethernet@fe368000 {
+			compatible = "amlogic,meson-axg-dwmac", "snps,dwmac-4.00";
+			reg = <0x00 0xfe368000 0x00 0x12ec 0x00 0xfe364000 0x00 0x2c>;
+			interrupts = <0x00 0x4a 0x04>;
+			interrupt-names = "macirq";
+			clocks = <0x03 0x04 0x05>;
+			clock-names = "stmmaceth", "clkin0", "clkin1";
+			rx-fifo-depth = <0x1000>;
+			tx-fifo-depth = <0x800>;
+			phy-mode = "rmii";
+			phy-handle = <0x06>;
+
+			mdio {
+				compatible = "snps,dwmac-mdio";
+				#address-cells = <0x01>;
+				#size-cells = <0x00>;
+				phandle = <0x07>;
+			};
+		};
+
+		mdio-multiplexer@fe360000 {
+			compatible = "amlogic,g12a-mdio-mux";
+			reg = <0x00 0xfe360000 0x00 0xa4>;
+			clocks = <0x03 0x02 0x05>;
+			clock-names = "pclk", "clkin0", "clkin1";
+			mdio-parent-bus = <0x07>;
+			#address-cells = <0x01>;
+			#size-cells = <0x00>;
+
+			mdio@1 {
+				reg = <0x01>;
+				#address-cells = <0x01>;
+				#size-cells = <0x00>;
+
+				ethernet-phy@8 {
+					compatible = "ethernet-phy-ieee802.3-c22";
+					reg = <0x08>;
+					max-speed = <0x64>;
+					interrupts = <0x00 0x4b 0x04>;
+					phandle = <0x06>;
+				};
+			};
+		};
+
+		clock-controller@fe000048 {
+			compatible = "amlogic,w152d-crg-clock-probe";
+			reg = <0x00 0xfe000048 0x00 0x04 0x00 0xfe0001a0 0x00 0x04>;
+			#clock-cells = <0x01>;
+			phandle = <0x08>;
+		};
+
+		usb3-phy@fe35a000 {
+			compatible = "amlogic,w152d-usb3-phy-probe";
+			reg = <0x00 0xfe35a000 0x00 0x184 0x00 0xfe002000 0x00 0x100 0x00 0xfe004184 0x00 0x08 0x00 0xfe358000 0x00 0x10 0x00 0xfe350000 0x00 0x8000>;
+			reg-names = "analog", "reset", "vbus-gpio", "usb2-companion", "crg";
+			clocks = <0x08 0x00 0x08 0x02>;
+			clock-names = "crg", "pipe";
+		};
+
+		usb@fe350000 {
+			compatible = "generic-xhci";
+			reg = <0x00 0xfe350000 0x00 0x8000>;
+			interrupts = <0x00 0x83 0x01>;
+			clocks = <0x08 0x00>;
+		};
+
+		usb2-hub@fe348000 {
+			compatible = "amlogic,w152d-usb2-hub-probe";
+			reg = <0x00 0xfe348000 0x00 0x10 0x00 0xfe004144 0x00 0x08 0x00 0xfe004204 0x00 0x08 0x00 0xfe002000 0x00 0x100 0x00 0xfe340000 0x00 0x8000>;
+			reg-names = "phy", "hub-reset-gpio", "port-enable-gpio", "reset", "crg";
+			clocks = <0x08 0x01>;
+		};
+
+		usb@fe340000 {
+			compatible = "generic-xhci";
+			reg = <0x00 0xfe340000 0x00 0x8000>;
+			interrupts = <0x00 0x82 0x01>;
+			clocks = <0x08 0x01>;
+		};
+
+		mmc@fe088000 {
+			compatible = "amlogic,meson-axg-mmc";
+			reg = <0x00 0xfe088000 0x00 0x1000>;
+			interrupts = <0x00 0xb0 0x04>;
+			clocks = <0x09 0x02 0x0a>;
+			clock-names = "core", "clkin0", "clkin1";
+			vmmc-supply = <0x0b>;
+			vqmmc-supply = <0x0c>;
+			bus-width = <0x04>;
+			max-frequency = <0xbebc200>;
+			cap-sdio-irq;
+			non-removable;
+			no-mmc;
+			no-sd;
+			pinctrl-names = "default";
+			pinctrl-0;
+			cap-sd-highspeed;
+			sd-uhs-sdr50;
+			sd-uhs-sdr104;
+		};
+
+		wifi-gpio@fe004100 {
+			compatible = "amlogic,w152d-wifi-gpio", "syscon";
+			reg = <0x00 0xfe004100 0x00 0x0c>;
+		};
+
+		gpio@fe004180 {
+			compatible = "amlogic,w152d-ao-gpio", "syscon";
+			reg = <0x00 0xfe004180 0x00 0x0c>;
+			gpio-controller;
+			#gpio-cells = <0x02>;
+			gpio-reserved-ranges = <0x00 0x04 0x06 0x01 0x08 0x01 0x0a 0x02>;
+			phandle = <0x0e>;
+		};
+
+		mmc@fe08c000 {
+			compatible = "amlogic,meson-axg-mmc";
+			reg = <0x00 0xfe08c000 0x00 0x1000>;
+			interrupt-parent = <0x01>;
+			interrupts = <0x00 0xb2 0x01>;
+			clocks = <0x03 0x02 0x0a>;
+			clock-names = "core", "clkin0", "clkin1";
+			vmmc-supply = <0x0d>;
+			pinctrl-names = "default";
+			pinctrl-0;
+			bus-width = <0x08>;
+			max-frequency = <0x3d0900>;
+			no-sd;
+			no-sdio;
+			non-removable;
+			phandle = <0x10>;
+		};
+
+		gpu-clock-controller@fe00015c {
+			compatible = "amlogic,w152d-mali-clk";
+			reg = <0x00 0xfe00015c 0x00 0x04 0x00 0xfe000044 0x00 0x04 0x00 0xfe00004c 0x00 0x04>;
+			#clock-cells = <0x01>;
+			phandle = <0x20>;
+		};
+
+		gpu@fe400000 {
+			compatible = "amlogic,meson-gxl-mali", "arm,mali-450";
+			reg = <0x00 0xfe400000 0x00 0x40000>;
+			interrupts = <0x00 0x90 0x04 0x00 0x91 0x04 0x00 0x92 0x04 0x00 0x93 0x04 0x00 0x94 0x04 0x00 0x95 0x04 0x00 0x96 0x04 0x00 0x97 0x04>;
+			interrupt-names = "gp", "gpmmu", "pp", "pmu", "pp0", "ppmmu0", "pp1", "ppmmu1";
+			clocks = <0x20 0x00 0x20 0x01>;
+			clock-names = "bus", "core";
+			switch-delay = <0xffff>;
+			operating-points-v2 = <0x21>;
+		};
+
+		display@ff000000 {
+			compatible = "amlogic,w152d-vpu-drm";
+			reg = <0x00 0xff000000 0x00 0x40000 0x00 0xfe300000 0x00 0x10000 0x00 0xfe004140 0x00 0x10>;
+			reg-names = "vpu", "hdmitx_top", "gpioh_in";
+			interrupts = <0x00 0xc5 0x01>;
+			interrupt-names = "viu-vsync";
+		};
+	};
+
+	clock-166666000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0x00>;
+		clock-frequency = <0x9ef1f10>;
+		phandle = <0x03>;
+	};
+
+	clock-1000000000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0x00>;
+		clock-frequency = <0x3b9aca00>;
+		phandle = <0x04>;
+	};
+
+	clock-50000000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0x00>;
+		clock-frequency = <0x2faf080>;
+		phandle = <0x05>;
+	};
+
+	usb-clock-166666000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0x00>;
+		clock-frequency = <0x9ef1f10>;
+		clock-output-names = "w152d-usb-sys";
+	};
+
+	clock-250000000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0x00>;
+		clock-frequency = <0xee6b280>;
+		clock-output-names = "w152d-usb-ref";
+	};
+
+	sdio-clock-166666000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0x00>;
+		clock-frequency = <0x9ef1f10>;
+		phandle = <0x09>;
+	};
+
+	clock-1152000000 {
+		compatible = "fixed-clock";
+		#clock-cells = <0x00>;
+		clock-frequency = <0x44aa2000>;
+		phandle = <0x0a>;
+	};
+
+	regulator-sdio-vmmc {
+		compatible = "regulator-fixed";
+		regulator-name = "sdio-vmmc";
+		regulator-min-microvolt = <0x325aa0>;
+		regulator-max-microvolt = <0x325aa0>;
+		regulator-always-on;
+		phandle = <0x0b>;
+	};
+
+	regulator-sdio-vqmmc {
+		compatible = "regulator-fixed";
+		regulator-name = "sdio-vqmmc";
+		regulator-min-microvolt = <0x1b7740>;
+		regulator-max-microvolt = <0x1b7740>;
+		regulator-always-on;
+		phandle = <0x0c>;
+	};
+
+	uwe-bsp {
+		compatible = "unisoc,uwe_bsp";
+		data-irq;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		led-power-green {
+			label = "green:power";
+			gpios = <0x0e 0x04 0x00>;
+			default-state = "off";
+		};
+
+		led-power-red {
+			label = "red:power";
+			gpios = <0x0e 0x05 0x01>;
+			default-state = "on";
+		};
+
+		led-network-green {
+			label = "green:lan";
+			gpios = <0x0e 0x09 0x00>;
+			default-state = "off";
+		};
+
+		led-network-red {
+			label = "red:lan";
+			gpios = <0x0e 0x07 0x01>;
+			default-state = "on";
+		};
+	};
+
+	regulator-emmc-vmmc {
+		compatible = "regulator-fixed";
+		regulator-name = "emmc-vmmc-probe";
+		regulator-min-microvolt = <0x325aa0>;
+		regulator-max-microvolt = <0x325aa0>;
+		regulator-always-on;
+		phandle = <0x0d>;
+	};
+
+	__symbols__ {
+		gic = "/interrupt-controller@fff01000";
+		xtal = "/clock-24000000";
+		uart_b = "/soc/serial@fe07a000";
+		mac_mdio = "/soc/ethernet@fe368000/mdio";
+		phy8 = "/soc/mdio-multiplexer@fe360000/mdio@1/ethernet-phy@8";
+		crg_clk = "/soc/clock-controller@fe000048";
+		ao_gpio = "/soc/gpio@fe004180";
+		emmc = "/soc/mmc@fe08c000";
+		mali_clk = "/soc/gpu-clock-controller@fe00015c";
+		mali = "/soc/gpu@fe400000";
+		vpu_drm = "/soc/display@ff000000";
+		gpu_opp_table = "/gpu-opp-table";
+		sys_clk = "/clock-166666000";
+		fclk_div2 = "/clock-1000000000";
+		fclk_50m = "/clock-50000000";
+		sdio_bus_clk = "/sdio-clock-166666000";
+		gp0_pll = "/clock-1152000000";
+		sdio_vmmc = "/regulator-sdio-vmmc";
+		sdio_vqmmc = "/regulator-sdio-vqmmc";
+		emmc_vmmc = "/regulator-emmc-vmmc";
+	};
+};
