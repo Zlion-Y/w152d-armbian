@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 2 || $EUID -ne 0 ]]; then
-    echo "Usage (as root): $0 verified-v0.4.0.img[.gz] output.img.gz" >&2
+if [[ $# -lt 2 || $# -gt 3 || $EUID -ne 0 ]]; then
+    echo "Usage (as root): $0 verified-v0.4.0.img[.gz] output.img.gz [w152d-6.12.119-ophub-trial.tgz]" >&2
     exit 2
 fi
 
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 base=$(realpath -- "$1")
 output=$(realpath -m -- "$2")
+kernel_bundle=${3:-}
+if [[ -n $kernel_bundle ]]; then
+    kernel_bundle=$(realpath -- "$kernel_bundle")
+    printf '%s  %s\n' 553faa8f9117a23d421d27e9fe264630407a141a877793c0c9d2abc589dded4f "$kernel_bundle" | sha256sum -c -
+fi
 [[ $output == *.img.gz && ! -e $output && ! -e $output.partial ]]
 mkdir -p -- "$(dirname -- "$output")"
 work=$(mktemp -d "${TMPDIR:-/var/tmp}/w152d-ophub-hdmi.XXXXXXXX")
@@ -82,25 +87,46 @@ After=systemd-tmpfiles-setup.service systemd-modules-load.service
 CONSOLE
 
 release=6.12.118-ophub
-headers=$work/headers
-cp -a "$root/usr/src/linux-headers-$release" "$headers"
-cp -- "$repo"/gpu-hdmi-driver/{Makefile,gcc-wrap.sh,*.c,*.dts} "$work/driver/"
+driver=$work/driver
+if [[ -n $kernel_bundle ]]; then
+    release=6.12.119-ophub
+    mkdir "$work/kernel"
+    tar -xzf "$kernel_bundle" -C "$work/kernel"
+    driver=$work/kernel/driver
+    cp -a "$work/kernel/modules/$release" "$root/usr/lib/modules/"
+    headers=$root/usr/src/linux-headers-$release
+    mkdir "$headers"
+    tar -xzf "$work/kernel/header-$release.tar.gz" -C "$headers"
+    ln -sfn "/usr/src/linux-headers-$release" "$root/usr/lib/modules/$release/build"
+    install -m 0644 "$work/kernel/boot/vmlinuz-$release" "$boot/zImage"
+    install -m 0644 "$work/kernel/boot/uInitrd-$release" "$boot/uInitrd"
+    install -m 0644 "$work/kernel/boot/"{config,System.map,initrd.img,vmlinuz}"-$release" "$boot/"
 
-# The packaged headers contain ARM64 host tools. Build the two tools used here
-# for the Linux build host before invoking the ARM64 cross compiler.
-(
-    cd "$headers"
-    gcc -O2 -I scripts/include -o scripts/basic/fixdep scripts/basic/fixdep.c
-    gcc -O2 -I scripts/include -I scripts/mod -o scripts/mod/modpost \
-        scripts/mod/{modpost,file2alias,sumversion,symsearch}.c
-)
-make -C "$work/driver" -j"${JOBS:-4}" KDIR="$headers" \
-    ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}" all
+    # Keep the original low-speed DTB available for USB recovery.
+    install -m 0644 "$driver/meson-gxlx4-w152d-emmc.dtb" "$boot/dtb/amlogic/meson-gxlx4-w152d-emmc-4mhz.dtb"
+    dtc -@ -I dts -O dtb -o "$work/emmc-hs200.dtbo" "$repo/gpu-hdmi-driver/meson-gxlx4-w152d-emmc-hs200.dtso"
+    fdtoverlay -i "$driver/meson-gxlx4-w152d-emmc.dtb" -o "$work/emmc-hs200.dtb" "$work/emmc-hs200.dtbo"
+    install -m 0644 "$work/emmc-hs200.dtb" "$driver/meson-gxlx4-w152d-emmc.dtb"
+else
+    headers=$work/headers
+    cp -a "$root/usr/src/linux-headers-$release" "$headers"
+    cp -- "$repo"/gpu-hdmi-driver/{Makefile,gcc-wrap.sh,*.c,*.dts} "$driver/"
+
+    # Rebuild the packaged ARM64 host tools for the Linux build host.
+    (
+        cd "$headers"
+        gcc -O2 -I scripts/include -o scripts/basic/fixdep scripts/basic/fixdep.c
+        gcc -O2 -I scripts/include -I scripts/mod -o scripts/mod/modpost \
+            scripts/mod/{modpost,file2alias,sumversion,symsearch}.c
+    )
+    make -C "$driver" -j"${JOBS:-4}" KDIR="$headers" \
+        ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}" all
+fi
 
 modules=$root/usr/lib/modules/$release
 install -d "$modules/extra"
 for name in w152d_dt_overlay w152d_gpu_clk w152d_drm; do
-    module=$work/driver/$name.ko
+    module=$driver/$name.ko
     read -r vermagic < <(modinfo -F vermagic "$module")
     printf '%s vermagic: %s\n' "$name" "$vermagic"
     [[ $vermagic == "$release SMP preempt mod_unload aarch64" ]]
@@ -117,7 +143,7 @@ wcn_cp2_log_path="/dev/shm";
 CP2
 
 for name in meson-gxlx4-w152d meson-gxlx4-w152d-emmc; do
-    install -m 0644 "$work/driver/$name.dtb" "$boot/dtb/amlogic/"
+    install -m 0644 "$driver/$name.dtb" "$boot/dtb/amlogic/"
 done
 sed -i -E '/^APPEND=/ { /(^|[[:blank:]])console=tty1([[:blank:]]|$)/! s/$/ console=tty1/; }' "$boot/uEnv.txt"
 SOURCE_DATE_EPOCH=0 mkimage -A arm -O linux -T script -C none \

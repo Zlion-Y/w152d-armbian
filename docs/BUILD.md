@@ -31,6 +31,8 @@ sudo bash tools/build_ophub_hdmi_image.sh /path/to/v0.4.0-base.img.gz outputs/Ar
 
 脚本验证 v0.4.0 输入镜像的 SHA-256，从随镜像提供的头文件重新构建 HDMI 与 GPU 模块，安装两份板级 DTB，并用[经冷启动验证的 USB 脚本](../contrib/ophub/w152d-hdmi-usb.cmd)沿用 U-Boot 根据 EDID 配置的输出时序。镜像中的内核仍为原基底的 `6.12.118-ophub`。新的根文件系统保留标准 Armbian 首次登录流程，SSH 服务在首次启动时生成本机主机密钥。输出前检查 FAT32 和 ext4。
 
+HS200 测试镜像向同一脚本传入第三个参数 `w152d-6.12.119-ophub-trial.tgz`。脚本校验归档，使用实机试启动的 6.12.119 内核、initramfs 和 HDMI/GPU 模块，并在该归档的 eMMC DTB 上应用 HS200 overlay。输出默认使用 HS200 DTB。恢复低速配置时，将 U 盘 `uEnv.txt` 的 `FDT=` 改为 `/dtb/amlogic/meson-gxlx4-w152d-emmc-4mhz.dtb`。
+
 ### 主线 USB 启动包
 
 打包需要 Linux 上的 Bash、Python 3、C 编译器、binutils、dtc、kmod、gzip，以及一份 ARM64 静态 BusyBox。给第三个参数传 `-` 可生成不含外置无线固件的 initramfs。需要无线时，把以下文件放到刷好的 U 盘 `w152d/firmware/`，或用该目录作为参数生成仅在本地使用的 initramfs。

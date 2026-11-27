@@ -1,0 +1,30 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target-path = "/";
+
+		__overlay__ {
+			emmc_vqmmc: regulator-emmc-vqmmc {
+				compatible = "regulator-fixed";
+				regulator-name = "emmc-vqmmc";
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-always-on;
+			};
+		};
+	};
+
+	fragment@1 {
+		target-path = "/soc/mmc@fe08c000";
+
+		__overlay__ {
+			vqmmc-supply = <&emmc_vqmmc>;
+			/* The MMC core uses the HS rate for CMD13 during the HS200 switch. */
+			cap-mmc-highspeed;
+			mmc-hs200-1_8v;
+			max-frequency = <200000000>;
+		};
+	};
+};
