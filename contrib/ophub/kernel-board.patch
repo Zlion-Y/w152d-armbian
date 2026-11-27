@@ -111,7 +111,7 @@
 +dtb-$(CONFIG_ARCH_MESON) += meson-gxlx4-w152d.dtb
 --- /dev/null
 +++ b/arch/arm64/boot/dts/amlogic/meson-gxlx4-w152d.dts
-@@ -0,0 +1,386 @@
+@@ -0,0 +1,417 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +
 +/dts-v1/;
@@ -496,5 +496,36 @@
 +			gpios = <&ao_gpio 7 GPIO_ACTIVE_LOW>;
 +			default-state = "on";
 +		};
++	};
++};
++
++&{/} {
++	emmc_vmmc: regulator-emmc-vmmc {
++		compatible = "regulator-fixed";
++		regulator-name = "emmc-vmmc";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-always-on;
++	};
++};
++
++&{/soc} {
++	mmc@fe08c000 {
++		compatible = "amlogic,meson-axg-mmc";
++		reg = <0x0 0xfe08c000 0x0 0x1000>;
++		interrupts = <GIC_SPI 178 IRQ_TYPE_EDGE_RISING>;
++		clocks = <&sys_clk>, <&xtal>, <&fclk_div2>;
++		clock-names = "core", "clkin0", "clkin1";
++		vmmc-supply = <&emmc_vmmc>;
++		w152d,stock-fixed-vqmmc-1v8;
++		bus-width = <8>;
++		cap-mmc-highspeed;
++		mmc-hs200-1_8v;
++		max-frequency = <200000000>;
++		no-sd;
++		no-sdio;
++		non-removable;
++		pinctrl-names = "default";
++		pinctrl-0 = <>;
 +	};
 +};

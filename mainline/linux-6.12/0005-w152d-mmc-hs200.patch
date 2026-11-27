@@ -1,0 +1,97 @@
+--- a/drivers/mmc/host/meson-gx-mmc.c
++++ b/drivers/mmc/host/meson-gx-mmc.c
+@@ -538,13 +538,67 @@
+ 	writel(val, host->regs + host->data->adjust);
+ }
+ 
++static int w152d_hs200_window(u32 good, unsigned int taps)
++{
++	unsigned int start, len, best_start = 0, best_len = 0;
++
++	if (!taps || taps > 32)
++		return -EINVAL;
++	for (start = 0; start < taps; start++) {
++		for (len = 0; len < taps; len++)
++			if (!(good & BIT((start + len) % taps)))
++				break;
++		if (len > best_len) {
++			best_start = start;
++			best_len = len;
++		}
++	}
++	return best_len >= 2 ? (int)((best_start + best_len / 2) % taps) : -EIO;
++}
++
+ static int meson_mmc_resampling_tuning(struct mmc_host *mmc, u32 opcode)
+ {
+ 	struct meson_host *host = mmc_priv(mmc);
+ 	unsigned int val, dly, max_dly, i;
+-	int ret;
++	unsigned int tap, repeat, taps;
++	u32 good = 0;
++	int selected, ret;
++
++	if (opcode == MMC_SEND_TUNING_BLOCK_HS200 &&
++	    mmc->ios.timing == MMC_TIMING_MMC_HS200 &&
++	    mmc->ios.bus_width == MMC_BUS_WIDTH_8 &&
++	    mmc->actual_clock == 200000000 &&
++	    clk_get_rate(host->mux_clk) == 1000000000) {
++		taps = 5;
++		val = readl(host->regs + host->data->adjust) | ADJUST_ADJ_EN;
++		for (tap = 0; tap < taps; tap++) {
++			val &= ~ADJUST_ADJ_DELAY_MASK;
++			val |= FIELD_PREP(ADJUST_ADJ_DELAY_MASK, tap);
++			writel(val, host->regs + host->data->adjust);
++			for (repeat = 0; repeat < 8; repeat++) {
++				ret = mmc_send_tuning(mmc, opcode, NULL);
++				if (ret)
++					break;
++			}
++			if (repeat == 8)
++				good |= BIT(tap);
++		}
++		selected = w152d_hs200_window(good, taps);
++		dev_dbg(host->dev, "W152D_HS200: TUNING_WINDOW good=%x selected=%d taps=%u\n",
++			good, selected, taps);
++		if (selected < 0)
++			goto fail;
++		val &= ~ADJUST_ADJ_DELAY_MASK;
++		val |= FIELD_PREP(ADJUST_ADJ_DELAY_MASK, selected);
++		writel(val, host->regs + host->data->adjust);
++		for (repeat = 0; repeat < 32; repeat++)
++			if (mmc_send_tuning(mmc, opcode, NULL))
++				goto fail;
++		dev_dbg(host->dev, "W152D_HS200: TUNING_PASS tap=%d confirm=32 good=%x\n",
++			selected, good);
++		return 0;
++	}
+ 
+-	/* Resampling is done using the source clock */
+ 	max_dly = DIV_ROUND_UP(clk_get_rate(host->mux_clk),
+ 			       clk_get_rate(host->mmc_clk));
+ 
+@@ -570,6 +624,7 @@
+ 		}
+ 	}
+ 
++fail:
+ 	meson_mmc_reset_resampling(host);
+ 	return -EIO;
+ }
+@@ -1102,6 +1157,16 @@
+ static int meson_mmc_voltage_switch(struct mmc_host *mmc, struct mmc_ios *ios)
+ {
+ 	int ret;
++	struct meson_host *host = mmc_priv(mmc);
++
++	if (of_property_read_bool(host->dev->of_node, "w152d,stock-fixed-vqmmc-1v8")) {
++		if (ios->signal_voltage != MMC_SIGNAL_VOLTAGE_330 &&
++		    ios->signal_voltage != MMC_SIGNAL_VOLTAGE_180)
++			return -EINVAL;
++		dev_dbg(host->dev, "W152D: fixed vqmmc rail, no regulator write for signal=%u\n",
++			ios->signal_voltage);
++		return 0;
++	}
+ 
+ 	/* vqmmc regulator is available */
+ 	if (!IS_ERR(mmc->supply.vqmmc)) {
