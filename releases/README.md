@@ -1,5 +1,9 @@
 # W152D 主线发布
 
+## v0.4.2 eMMC HS200
+
+[v0.4.2](https://github.com/Zlion-Y/w152d-armbian/releases/tag/v0.4.2) 使用 Linux `6.12.119-ophub`，默认启用 eMMC HS200。已在单台 64 GB W152D 上验证干净镜像从 USB 首次启动、安装到 eMMC、拔盘冷启动。冷启动后 HS200 实际时钟为 192 MHz，顺序直读 1 GiB 测得 139 MB/s。[安装与验收](../docs/EMMC_INSTALL.md)
+
 ## v0.4.1 HDMI 与 GPU
 
 [v0.4.1](https://github.com/Zlion-Y/w152d-armbian/releases/tag/v0.4.1) 提供 Armbian Bookworm 与 Linux `6.12.118-ophub` 的 W152D 整盘镜像。核对 `SHA256SUMS` 后解压 `.img.gz`，用 Etcher 写入 U 盘。首次开机在控制台完成 Armbian 账号设置，SSH 主机密钥由本机生成。

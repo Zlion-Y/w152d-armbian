@@ -4,7 +4,7 @@
 
 ## 安装盘和原厂 U-Boot
 
-本教程的安装验收对应 [v0.4.0 专用镜像](https://github.com/Zlion-Y/w152d-armbian/releases/tag/v0.4.0)。打包时预选 `meson-gxlx4-w152d-emmc.dtb`，从 U 盘启动时就能识别内置 eMMC。刷盘后无需编辑 `uEnv.txt`。v0.4.1 的实机验收覆盖 [USB 启动](GETTING_STARTED.md)，eMMC 安装待验证。
+[v0.4.2 HS200 镜像](https://github.com/Zlion-Y/w152d-armbian/releases/tag/v0.4.2)和 [v0.4.0 镜像](https://github.com/Zlion-Y/w152d-armbian/releases/tag/v0.4.0)均完成 eMMC 安装验收。镜像默认选择 `meson-gxlx4-w152d-emmc.dtb`，从 U 盘启动时就能识别内置 eMMC。v0.4.2 随附 4 MHz 的回退设备树，切换方法见[构建说明](BUILD.md#ophub-hdmi-发布镜像)。
 
 安装会覆盖原 Android 系统和用户数据。安装前在设备之外保留该盒子的原厂完整备份。实测沿用原厂 U-Boot 2019.01，并通过 921600、8N1、无流控的 TTL 串口设置启动环境。
 

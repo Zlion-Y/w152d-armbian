@@ -2,9 +2,9 @@
 
 面向中兴 W152D（Amlogic S905L4 / GXLX4）的独立 Armbian 适配项目。本仓库是 W152D 镜像、源码、教程和问题反馈的主入口。发行版基于 Armbian Bookworm ARM64 和 ophub 内核，使用盒子上的原厂 U-Boot 启动。
 
-**当前正式版 v0.4.1** · Linux 6.12.118-ophub · 推荐先从 USB 启动试用。
+**当前正式版 v0.4.2** · Linux 6.12.119-ophub · 推荐先从 USB 启动试用。
 
-[发布页](https://github.com/Zlion-Y/w152d-armbian/releases/tag/v0.4.1) · [下载 USB 镜像](https://github.com/Zlion-Y/w152d-armbian/releases/download/v0.4.1/Armbian_W152D_Bookworm_6.12.118_v0.4.1.img.gz) · [SHA256SUMS](https://github.com/Zlion-Y/w152d-armbian/releases/download/v0.4.1/SHA256SUMS)
+[发布页](https://github.com/Zlion-Y/w152d-armbian/releases/tag/v0.4.2) · [下载 USB 镜像](https://github.com/Zlion-Y/w152d-armbian/releases/download/v0.4.2/Armbian_W152D_Bookworm_6.12.119_v0.4.2.img.gz) · [SHA256SUMS](https://github.com/Zlion-Y/w152d-armbian/releases/download/v0.4.2/SHA256SUMS)
 
 ## 第一次使用
 
@@ -22,15 +22,15 @@
 | HDMI | v0.4.1 在一台 4K 电视上冷启动输出 2160p60，控制台使用 1080p 缓冲区。HDMI 音频当前不可用，运行中热插拔及其他屏幕的兼容性待验证。 |
 | GPU | Mali-450 的 Lima 内核接口可用，可见 `/dev/dri/renderD128`。桌面 3D 渲染待验证。 |
 | 网络 | 百兆全双工、DHCP 和 SSH 已验证。v0.4.1 已验证 SC2355 扫描，5 GHz 关联与传输见[历史实测](docs/MAINLINE_USB.md#实机记录)。 |
-| eMMC | v0.4.0 已验证 64 GB 机型安装、重装和拔盘冷启动。v0.4.1 的 eMMC 安装待验证。 |
+| eMMC | v0.4.2 已在单台 64 GB W152D 上完成安装和拔盘冷启动，HS200 实际时钟 192 MHz，冷启动后顺序直读 139 MB/s。 |
 
 ## 文档
 
 | 你想做什么 | 去哪里看 |
 | --- | --- |
-| 从 U 盘启动并通过 SSH 登录 | [v0.4.1 入门教程](docs/GETTING_STARTED.md) |
+| 从 U 盘启动并通过 SSH 登录 | [入门教程](docs/GETTING_STARTED.md) |
 | 配置 USB 优先或恢复原启动顺序 | [原厂 U-Boot 启动与恢复](docs/USB_BOOT_AND_RECOVERY.md) |
-| 安装到内置 eMMC | [v0.4.0 eMMC 安装教程](docs/EMMC_INSTALL.md) |
+| 安装到内置 eMMC | [eMMC 安装教程](docs/EMMC_INSTALL.md) |
 | 查看 HDMI、Lima 或内核升级实测 | [GPU 与 HDMI 实测](docs/GPU_AND_HDMI.md) · [驱动源码与安装](gpu-hdmi-driver/README.md) |
 | 自己编译内核或重做发布镜像 | [构建说明](docs/BUILD.md) |
 | 找旧版或查看 ophub 接入记录 | [历史发布](releases/README.md) · [ophub 适配记录](contrib/ophub/README.md) |
