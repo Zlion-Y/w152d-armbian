@@ -15,6 +15,16 @@ __pycache__/
 *.bin
 *.ko
 *.dtb
+*.dtbo
+*.PARTITION
+*.o
+*.mod
+*.mod.c
+*.symvers
+*.order
+.*.cmd
+gpu-hdmi-driver/w152d_overlay_dtbo.h
+gpu-hdmi-driver/orig/
 *.cpio
 *.gz
 *.zst

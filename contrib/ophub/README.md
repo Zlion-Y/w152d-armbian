@@ -23,7 +23,7 @@ eMMC 设备树以 USB DTS 为基础，加入内置 eMMC 控制器和 MMC 别名�
 
 已在一台 64 GB W152D 上验证从原厂 Android 11 启动、安装、拔盘 eMMC 冷启动和插盘优先 USB。三码密钥区、有线及 Wi-Fi MAC 比对通过。[eMMC 安装与验收](../../docs/EMMC_INSTALL.md)
 
-同版本内核离线重装已有实机记录。跨版本升级和在线取包待验证。HDMI、蓝牙、硬解、温度读取、CPU 调频和硬件看门狗未纳入本轮验收。
+同版本内核离线重装已有实机记录。跨版本升级和在线取包待验证。Mali-450 MP2 GPU（`lima` + `125~800 MHz` `devfreq`）与 HDMI 显示输出（`1920x1080@60Hz` Atomic KMS、EDID、VSync 及 `/dev/fb0` `tty1` 终端）已通过外置模块与完整设备树完成实机点亮验证，详见 [GPU 与 HDMI 驱动目录](../../gpu-hdmi-driver/README.md) 与 [硬件适配说明](../../docs/GPU_AND_HDMI.md)。蓝牙、硬解、温度读取、CPU 调频和硬件看门狗未纳入本轮验收。
 
 ## 本地适配补丁
 

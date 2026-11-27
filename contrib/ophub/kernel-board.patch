@@ -311,8 +311,8 @@
 +			#size-cells = <0>;
 +
 +			phy8: ethernet-phy@8 {
-+				/* Let phylib read the ID over MDIO during this test. */
-+				compatible = "ethernet-phy-ieee802.3-c22";
++				/* GXLX4 reports 0x01803300; match meson-gxl G12A driver (0x01803301). */
++				compatible = "ethernet-phy-id0180.3301", "ethernet-phy-ieee802.3-c22";
 +				reg = <8>;
 +				max-speed = <100>;
 +				interrupts = <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
