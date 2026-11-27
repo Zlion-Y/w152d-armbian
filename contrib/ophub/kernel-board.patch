@@ -111,7 +111,7 @@
 +dtb-$(CONFIG_ARCH_MESON) += meson-gxlx4-w152d.dtb
 --- /dev/null
 +++ b/arch/arm64/boot/dts/amlogic/meson-gxlx4-w152d.dts
-@@ -0,0 +1,386 @@
+@@ -0,0 +1,399 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +
 +/dts-v1/;
@@ -130,7 +130,20 @@
 +	};
 +
 +	chosen {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
 +		stdout-path = "serial0:921600n8";
++
++		framebuffer@7f000000 {
++			compatible = "simple-framebuffer";
++			reg = <0x0 0x7f000000 0x0 0x5eec00>;
++			width = <1920>;
++			height = <1080>;
++			stride = <5760>;
++			format = "r8g8b8";
++			status = "okay";
++		};
 +	};
 +
 +	/* RAM range after the boot firmware's fixup. */

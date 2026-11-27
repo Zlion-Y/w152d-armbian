@@ -100,13 +100,20 @@ new file mode 100644
 index 0000000..5f1c308
 --- /dev/null
 +++ b/build-armbian/armbian-files/different-files/w152d/bootfs/aml_autoscript.cmd
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,42 @@
 +echo "Armbian: W152D vendor USB boot"
 +# The vendor recovery command already initialized USB and selected disk 0.
 +if fatload usb 0:1 0x030c0000 uEnv.txt && env import -t 0x030c0000 ${filesize} LINUX INITRD FDT APPEND; then
 +    if fatload usb 0:1 0x08600000 ${LINUX} && itest ${filesize} -le 0x03200000; then
 +        if fatload usb 0:1 0x0b800000 ${INITRD} && itest ${filesize} -le 0x01800000; then
 +            if fatload usb 0:1 0x0d000000 ${FDT} && fdt addr 0x0d000000 && fdt resize 0x10000; then
++                setenv outputmode 1080p60hz
++                setenv hdmimode 1080p60hz
++                vout output 1080p60hz
++                hdmitx blank 0
++                osd open
++                osd clear
++                osd enable
 +                gpio clear GPIOAO_4
 +                gpio clear GPIOAO_5
 +                gpio clear GPIOAO_9
@@ -145,7 +152,7 @@ index 0000000..bd17cc4
 +LINUX=/zImage
 +INITRD=/uInitrd
 +FDT=/dtb/amlogic/meson-gxlx4-w152d.dtb
-+APPEND=root=LABEL=ROOTFS console=ttyAML0,921600n8 net.ifnames=0
++APPEND=root=LABEL=ROOTFS console=ttyAML0,921600n8 console=tty0 net.ifnames=0
 diff --git a/build-armbian/armbian-files/different-files/w152d/rootfs/etc/armbian-board-release.conf b/build-armbian/armbian-files/different-files/w152d/rootfs/etc/armbian-board-release.conf
 new file mode 100644
 index 0000000..67f7e9e

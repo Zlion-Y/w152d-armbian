@@ -23,7 +23,9 @@ eMMC 设备树以 USB DTS 为基础，加入内置 eMMC 控制器和 MMC 别名�
 
 已在一台 64 GB W152D 上验证从原厂 Android 11 启动、安装、拔盘 eMMC 冷启动和插盘优先 USB。三码密钥区、有线及 Wi-Fi MAC 比对通过。[eMMC 安装与验收](../../docs/EMMC_INSTALL.md)
 
-同版本内核离线重装已有实机记录。跨版本升级和在线取包待验证。HDMI、蓝牙、硬解、温度读取、CPU 调频和硬件看门狗未纳入本轮验收。
+同版本内核离线重装已有实机记录。跨版本升级和在线取包待验证。蓝牙、硬解、温度读取、CPU 调频和硬件看门狗未纳入本轮验收。
+
+HDMI 通过原厂 U-Boot 初始化、Linux `simple-framebuffer` 接管，输出固定 1920x1080p60 文字控制台；HDMI 音频、热插拔与运行中切分辨率未验收。见 [w152d-hdmi-simplefb.md](w152d-hdmi-simplefb.md)。
 
 ## 本地适配补丁
 
