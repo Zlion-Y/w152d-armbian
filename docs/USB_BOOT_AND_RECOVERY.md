@@ -2,6 +2,8 @@
 
 适用于 W152D / GXLX4 BT203 上验证过的原厂 U-Boot 2019.01。按下文配置 USB 优先后，原厂 U-Boot 会先打开 USB3 和三个 USB2 口的供电，再扫描 U 盘并执行 FAT 根目录的 `aml_autoscript`。Linux 启动脚本和系统均在 U 盘上。
 
+本文的供电和启动顺序也适用于 v0.4.1。该版脚本从 `usb 0:1` 读取 `uEnv.txt`、内核和设备树，首次试用时请只插一只 USB 存储设备。[v0.4.1 入门教程](GETTING_STARTED.md)
+
 ## 临时启动
 
 串口参数为 921600、8N1、无流控。若盒子尚未配置 USB 优先，插好盘后中断 U-Boot 倒计时。以下是 USB3 口已实测的临时启动方法。
@@ -28,15 +30,14 @@ usb tree
 usb storage
 ```
 
-先检查 `usb storage` 能否看到启动盘。如果启动盘是第 0 块 USB 磁盘，可在同一会话加载镜像入口。
+先检查 `usb storage` 能否看到启动盘。如果启动盘是第 0 块 USB 磁盘，可在同一会话加载 v0.4.1 镜像入口。
 
 ```text
 fatload usb 0:1 0x03000000 aml_autoscript
-setenv w152d_usbdev 0
 source 0x03000000
 ```
 
-有其它 USB 存储时，按 `usb storage` 的编号选择 `N:1` 并设置 `w152d_usbdev=N`，只在确认读对启动盘后执行 `source`。U-Boot 必须先枚举出磁盘，才能读取 U 盘上的脚本。Linux 下已经验证的 USB2 读写能力无法替代这一步。
+v0.4.1 的启动盘若被枚举为其他编号，拔掉其他 USB 存储后重新扫描。早期 USB 预览版支持变量 `w152d_usbdev`，可按 `usb storage` 的编号选择 `N:1` 并设置 `w152d_usbdev=N`。只有 `fatload` 成功读到脚本后才执行 `source`。
 
 ## 一次性配置 USB 优先
 
@@ -66,7 +67,7 @@ run bootcmd
 ## 回到设备自带启动路径
 
 1. 关闭设备并拔掉 U 盘，然后重新上电。
-2. 保留 U 盘时，可在电脑上删掉 `w152d/mainline/continuous`，把 `boot.arm` 写成四字节 `STOP`，再安全弹出。下一次 U 盘脚本将返回原厂 U-Boot，后续由设备启动顺序决定。
+2. 早期 USB 预览版可在电脑上删掉 `w152d/mainline/continuous`，把 `boot.arm` 写成四字节 `STOP`，再安全弹出。下一次 U 盘脚本将返回原厂 U-Boot，后续由设备启动顺序决定。
 3. 从串口临时进入设备自带系统可运行 `run storeboot`。启动过程中若内核挂起，需要先复位或断电才会回到 U-Boot。可引导时先同步 U 盘数据。
 
 U 盘只包含 Linux 引导文件和用户空间，不作为整机恢复介质。

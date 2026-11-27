@@ -1,21 +1,40 @@
-# W152D / S905L4 Armbian
+# 中兴 W152D Armbian
 
-在中兴 W152D（GXLX4）上使用原厂 U-Boot 启动基于 Linux 6.12 的 Armbian。当前 ophub 适配使用 Armbian Bookworm ARM64、systemd 和标准 initramfs。实机已验证 USB3 和三个 USB2 口，以及从原厂 Android 安装到 eMMC 后的拔盘冷启动。
+面向中兴 W152D（Amlogic S905L4 / GXLX4）的独立 Armbian 适配项目。本仓库是 W152D 镜像、源码、教程和问题反馈的主入口。发行版基于 Armbian Bookworm ARM64 和 ophub 内核，使用盒子上的原厂 U-Boot 启动。
 
-## ophub 适配
+**当前正式版 v0.4.1** · Linux 6.12.118-ophub · 推荐先从 USB 启动试用。
 
-- USB 版已验证首次启动、U 盘自动扩容、百兆有线、5 GHz Wi‑Fi、串口和双色 LED。[接入与验证状态](contrib/ophub/README.md)
-- Mali-450 MP2 GPU（`lima` `/dev/dri/renderD128` + `125~800 MHz` 动态调频）与 HDMI 显示输出（`/dev/dri/card0` Atomic KMS + `/dev/fb0` `tty1` 控制台）已完成驱动开发与实机点亮验证。[GPU 与 HDMI 驱动安装](gpu-hdmi-driver/README.md) · [硬件适配说明](docs/GPU_AND_HDMI.md)
-- eMMC 安装已在一台 64 GB W152D 上走完。安装盘从 USB 启动，使用通用 `armbian-install` 写入 eMMC。安装后插盘优先启动 USB，拔盘启动 eMMC，三码密钥区和有线、Wi‑Fi MAC 均通过比对。[eMMC 安装与验收](docs/EMMC_INSTALL.md)
-- USB 内核源码、stable 6.12 构建配置和 SC2355 固件**已合入 ophub**。[内核源码 #10](https://github.com/ophub/linux-6.12.y/pull/10) · [内核配置 #51](https://github.com/ophub/kernel/pull/51) · [固件 #9](https://github.com/ophub/firmware/pull/9)
-- USB 板型、eMMC 设备树和无线日志补丁正在上游审阅，eMMC 安装 PR 为草稿。eMMC 候选已通过标准打包、USB3 启动和 eMMC 重装。[USB 板型 #3796](https://github.com/ophub/amlogic-s9xxx-armbian/pull/3796) · [eMMC 设备树 #11](https://github.com/ophub/linux-6.12.y/pull/11) · [无线日志 #12](https://github.com/ophub/linux-6.12.y/pull/12) · [eMMC 安装 #3798](https://github.com/ophub/amlogic-s9xxx-armbian/pull/3798)
+[发布页](https://github.com/Zlion-Y/w152d-armbian/releases/tag/v0.4.1) · [下载 USB 镜像](https://github.com/Zlion-Y/w152d-armbian/releases/download/v0.4.1/Armbian_W152D_Bookworm_6.12.118_v0.4.1.img.gz) · [SHA256SUMS](https://github.com/Zlion-Y/w152d-armbian/releases/download/v0.4.1/SHA256SUMS)
 
-## 本仓库的 USB 预览版
+## 第一次使用
 
-历史预览版使用自定义 BusyBox PID 1，适合复现早期 USB 启动研究。预览版的 SSH、首启配置和制盘说明适用于该系列镜像。[预览版下载与发布记录](releases/README.md)
+1. 下载并校验压缩镜像，解压后用 balenaEtcher 写入备用 U 盘。写入会清空所选 U 盘。
+2. 关机后接好 HDMI、键盘和网线，只插这一只启动盘。已配置 USB 优先的盒子可以直接上电，原厂启动顺序的盒子先用 TTL 串口临时引导。
+3. 在 HDMI 控制台或 TTL 串口完成 Armbian 首次设置。之后从路由器查看盒子的 IP，再通过 SSH 连接。
 
-- [构建内核与根文件系统](docs/BUILD.md)
-- [生成整盘镜像并用 Etcher 制盘](docs/ETCHER.md)
-- [USB 预览版首启、SSH 和实机记录](docs/MAINLINE_USB.md)
-- [原厂 U-Boot 的 USB 入口与恢复](docs/USB_BOOT_AND_RECOVERY.md)
-- [第三方来源](docs/THIRD_PARTY.md) · [隐私与附件](docs/PRIVACY_AND_ARTIFACTS.md)
+[完整教程：校验、刷盘、启动、SSH 和故障排查](docs/GETTING_STARTED.md)
+
+## 功能与验收范围
+
+| 功能 | 实测结果 |
+| --- | --- |
+| USB 启动 | v0.4.1 已验证 USB3 启动、首次设置、扩容和重启。四个外置口的历史验收见[板型记录](contrib/ophub/README.md#usb-板型)。 |
+| HDMI | v0.4.1 在一台 4K 电视上冷启动输出 2160p60，控制台使用 1080p 缓冲区。HDMI 音频当前不可用，运行中热插拔及其他屏幕的兼容性待验证。 |
+| GPU | Mali-450 的 Lima 内核接口可用，可见 `/dev/dri/renderD128`。桌面 3D 渲染待验证。 |
+| 网络 | 百兆全双工、DHCP 和 SSH 已验证。v0.4.1 已验证 SC2355 扫描，5 GHz 关联与传输见[历史实测](docs/MAINLINE_USB.md#实机记录)。 |
+| eMMC | v0.4.0 已验证 64 GB 机型安装、重装和拔盘冷启动。v0.4.1 的 eMMC 安装待验证。 |
+
+## 文档
+
+| 你想做什么 | 去哪里看 |
+| --- | --- |
+| 从 U 盘启动并通过 SSH 登录 | [v0.4.1 入门教程](docs/GETTING_STARTED.md) |
+| 配置 USB 优先或恢复原启动顺序 | [原厂 U-Boot 启动与恢复](docs/USB_BOOT_AND_RECOVERY.md) |
+| 安装到内置 eMMC | [v0.4.0 eMMC 安装教程](docs/EMMC_INSTALL.md) |
+| 查看 HDMI、Lima 或内核升级实测 | [GPU 与 HDMI 实测](docs/GPU_AND_HDMI.md) · [驱动源码与安装](gpu-hdmi-driver/README.md) |
+| 自己编译内核或重做发布镜像 | [构建说明](docs/BUILD.md) |
+| 找旧版或查看 ophub 接入记录 | [历史发布](releases/README.md) · [ophub 适配记录](contrib/ophub/README.md) |
+
+遇到问题请附上镜像版本、启动介质、`uname -r` 和脱敏后的故障日志。显示问题请同时说明电视或显示器型号，以及有无信号和画面。[提交问题](https://github.com/Zlion-Y/w152d-armbian/issues/new) · [隐私与附件](docs/PRIVACY_AND_ARTIFACTS.md)
+
+感谢 mmlxm2025 提供 HDMI/GPU 驱动和内置有线 PHY 修复。[贡献记录](https://github.com/Zlion-Y/w152d-armbian/pull/1) · [第三方来源](docs/THIRD_PARTY.md)
