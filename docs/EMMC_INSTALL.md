@@ -28,7 +28,7 @@ run bootcmd
 | `/` | 1280 MiB 至盘尾，ext4，以 UUID 挂载 |
 | 原厂引导与设备数据 | 通用安装器备份并回写本机 bootloader。原厂 Amlogic 分区表、`reserved` 和 `env` 位于保留区域 |
 
-安装器使用通用 MBR 建表、格式化和复制流程。原厂 U-Boot 按 Amlogic 分区表用 `fatload mmc 1:2` 读取 FAT32 上的 `/boot.scr`，Linux 按 MBR 识别两个分区。eMMC DTB 采用本机实测的 4 MHz 上限。
+安装器使用通用 MBR 建表、格式化和复制流程。原厂 U-Boot 按 Amlogic 分区表用 `fatload mmc 1:2` 读取 FAT32 上的 `/boot.scr`，Linux 按 MBR 识别两个分区。v0.4.0 安装镜像的 eMMC DTB 采用本机实测的 4 MHz 上限。
 
 ## 实机结果
 
@@ -36,3 +36,13 @@ run bootcmd
 - 完整执行通用 `armbian-install`，核对分区边界、引导文件、启动参数及 `fstab`。安装后从 USB3 和第二个 USB2 口通过 USB 优先启动，拔盘从 eMMC 自动冷启动。
 - eMMC 上的 `/` 和 `/boot` 正常挂载，Wi‑Fi 与 SSH 可用，systemd 为 `running`，`dpkg --audit` 无输出。
 - 安装前后确认原厂引导数据、三码密钥区、有线及 Wi‑Fi MAC 一致。完整备份和原始设备标识保留在本地。[发布资料范围](PRIVACY_AND_ARTIFACTS.md)
+
+## Linux 6.12.119 HS200 实机验收
+
+在一台 64 GB W152D 上，从干净的 USB 测试镜像完成首次设置，运行 `armbian-install` 选择 602 和 ext4。关机拔盘后重新上电，Linux `6.12.119-ophub` 将 `/dev/mmcblk0p2` 挂载为 `/`，将 `/dev/mmcblk0p1` 挂载为 `/boot`。systemd 为 `running`，无失败服务。
+
+- eMMC 协商为 HS200，实际时钟 192 MHz，8 位总线和 1.8 V 信号电压。
+- 从 USB 启动时在两个偏移各直读 4 GiB，测得 141–142 MB/s。256 MiB 临时文件写入并读回，SHA-256 一致。
+- 拔盘冷启动后顺序直读 1 GiB，测得 139 MB/s，MMC 的 CRC、超时和调谐错误计数均为 0。
+
+测试镜像的构建方法见 [ophub HDMI 发布镜像](BUILD.md#ophub-hdmi-发布镜像)。
