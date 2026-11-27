@@ -21,6 +21,18 @@ JOBS=8 bash tools/build_w152d_kernel.sh /path/to/linux-6.12.tar.xz outputs/w152d
 
 标准 systemd 用户空间和 ophub 板型打包的后续改动见[接入补丁](../contrib/ophub)。
 
+### ophub HDMI 发布镜像
+
+使用 [v0.4.0 发布页](https://github.com/Zlion-Y/w152d-armbian/releases/tag/v0.4.0)上的标准 ophub Bookworm 镜像作为干净输入。构建在新的 ext4、磁盘镜像和内核头文件副本中进行。需要 Linux 上的 root、loop、GNU tar、GCC、ARM64 交叉工具链、make、dtc、kmod、mkimage、pigz、dosfstools 和 e2fsprogs。
+
+```sh
+sudo bash tools/build_ophub_hdmi_image.sh /path/to/v0.4.0-base.img.gz outputs/Armbian_W152D_Bookworm_6.12.118_v0.4.1.img.gz
+```
+
+脚本验证 v0.4.0 输入镜像的 SHA-256，从随镜像提供的头文件重新构建 HDMI 与 GPU 模块，安装两份板级 DTB，并用[经冷启动验证的 USB 脚本](../contrib/ophub/w152d-hdmi-usb.cmd)沿用 U-Boot 根据 EDID 配置的输出时序。镜像中的内核仍为原基底的 `6.12.118-ophub`。新的根文件系统保留标准 Armbian 首次登录流程，SSH 服务在首次启动时生成本机主机密钥。输出前检查 FAT32 和 ext4。
+
+### 主线 USB 启动包
+
 打包需要 Linux 上的 Bash、Python 3、C 编译器、binutils、dtc、kmod、gzip，以及一份 ARM64 静态 BusyBox。给第三个参数传 `-` 可生成不含外置无线固件的 initramfs。需要无线时，把以下文件放到刷好的 U 盘 `w152d/firmware/`，或用该目录作为参数生成仅在本地使用的 initramfs。
 
 | 文件 | 输入来源 | 验收样本 SHA-256 |

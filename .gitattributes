@@ -12,4 +12,5 @@ src/init* text eol=lf
 *.patch text eol=lf
 *.conf text eol=lf
 *.config text eol=lf
+contrib/ophub/w152d-hdmi-usb.cmd text eol=lf
 Makefile text eol=lf
