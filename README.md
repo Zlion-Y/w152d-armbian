@@ -33,6 +33,7 @@
 | 安装到内置 eMMC | [eMMC 安装教程](docs/EMMC_INSTALL.md) |
 | 查看 HDMI、Lima 或内核升级实测 | [GPU 与 HDMI 实测](docs/GPU_AND_HDMI.md) · [驱动源码与安装](gpu-hdmi-driver/README.md) |
 | 读取或适配 SoC 温度 | [温度驱动与实测](thermal-driver/README.md) |
+| 查看 CPU 自动调频和 VDDCPU 调压 | [调频驱动与实测](cpufreq-driver/README.md) |
 | 自己编译内核或重做发布镜像 | [构建说明](docs/BUILD.md) |
 | 找旧版或查看 ophub 接入记录 | [历史发布](releases/README.md) · [ophub 适配记录](contrib/ophub/README.md) |
 

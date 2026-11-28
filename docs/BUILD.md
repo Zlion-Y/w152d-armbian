@@ -33,7 +33,7 @@ sudo bash tools/build_ophub_hdmi_image.sh /path/to/v0.4.0-base.img.gz outputs/Ar
 
 HS200 测试镜像向同一脚本传入第三个参数 `w152d-6.12.119-ophub-trial.tgz`。脚本校验归档，使用实机试启动的 6.12.119 内核、initramfs 和 HDMI/GPU 模块，并在该归档的 eMMC DTB 上应用 HS200 overlay。输出默认使用 HS200 DTB。恢复低速配置时，将 U 盘 `uEnv.txt` 的 `FDT=` 改为 `/dtb/amlogic/meson-gxlx4-w152d-emmc-4mhz.dtb`。
 
-脚本从 [W152D 温度模块源码](../thermal-driver/) 编译与镜像内核匹配的驱动，并配置 systemd 开机加载。温度可从 thermal 和 hwmon 读取。
+脚本从 [温度驱动源码](../thermal-driver/) 和 [CPU 调频调压驱动源码](../cpufreq-driver/) 编译与镜像内核匹配的模块，并配置 systemd 开机加载。符合已验证启动条件的 W152D 由 `schedutil` 自动选档，温度可从 thermal 和 hwmon 读取。
 
 ### 主线 USB 启动包
 

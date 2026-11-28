@@ -125,17 +125,28 @@ if [[ -z $kernel_bundle ]]; then
         ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}" all
 fi
 
-thermal=$work/thermal
-mkdir "$thermal"
-cp -- "$repo"/thermal-driver/{Makefile,w152d_thermal.c} "$thermal/"
-install -m 0755 "$repo/gpu-hdmi-driver/gcc-wrap.sh" "$thermal/gcc-wrap.sh"
-make -C "$thermal" -j"${JOBS:-4}" KDIR="$headers" \
-    ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}" \
-    CC="$thermal/gcc-wrap.sh"
+board_modules=()
+cross_compile=${CROSS_COMPILE:-aarch64-linux-gnu-}
+for feature in thermal cpufreq; do
+    module_build=$work/$feature
+    mkdir "$module_build"
+    cp -- "$repo/$feature-driver/Makefile" "$repo/$feature-driver/w152d_${feature}.c" "$module_build/"
+    module_cc=${cross_compile}gcc
+    # Preserve the kernel flags used by the soak-tested CPUFreq build.
+    if [[ $feature == thermal ]] ||
+        ! "$module_cc" -fmin-function-alignment=4 -fstrict-flex-arrays=3 \
+            -x c -fsyntax-only /dev/null >/dev/null 2>&1; then
+        module_cc=$module_build/gcc-wrap.sh
+        install -m 0755 "$repo/gpu-hdmi-driver/gcc-wrap.sh" "$module_cc"
+    fi
+    make -C "$module_build" -j"${JOBS:-4}" KDIR="$headers" \
+        ARCH=arm64 CROSS_COMPILE="$cross_compile" CC="$module_cc"
+    board_modules+=("$module_build/w152d_${feature}.ko")
+done
 
 modules=$root/usr/lib/modules/$release
 install -d "$modules/extra"
-for module in "$driver"/{w152d_dt_overlay,w152d_gpu_clk,w152d_drm}.ko "$thermal/w152d_thermal.ko"; do
+for module in "$driver"/{w152d_dt_overlay,w152d_gpu_clk,w152d_drm}.ko "${board_modules[@]}"; do
     name=$(basename "$module" .ko)
     read -r vermagic < <(modinfo -F vermagic "$module")
     printf '%s vermagic: %s\n' "$name" "$vermagic"
@@ -146,6 +157,7 @@ depmod -b "$root" "$release"
 printf 'softdep lima pre: governor_simpleondemand w152d_gpu_clk w152d_drm\n' > "$root/etc/modprobe.d/w152d-gpu-hdmi.conf"
 printf 'w152d_dt_overlay\nw152d_gpu_clk\nw152d_drm\nlima\n' > "$root/etc/modules-load.d/w152d-gpu-hdmi.conf"
 printf 'w152d_thermal\n' > "$root/etc/modules-load.d/w152d-thermal.conf"
+printf 'w152d_cpufreq\n' > "$root/etc/modules-load.d/w152d-cpufreq.conf"
 cat > "$root/etc/unisoc_cp2log_config.txt" <<'CP2'
 wcn_cp2_log_limit_size=1M;
 wcn_cp2_file_max_num=1;
