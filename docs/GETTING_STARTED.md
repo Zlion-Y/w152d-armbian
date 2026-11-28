@@ -1,4 +1,4 @@
-# W152D Armbian v0.4.2 入门教程
+# W152D Armbian v0.4.3 入门教程
 
 本教程适用于中兴 W152D（Amlogic S905L4 / GXLX4）和本仓库发布的 Armbian Bookworm USB 镜像。USB 试用保留 eMMC 上的系统和用户分区。需要写入内置 eMMC 时，请使用 [eMMC 安装教程](EMMC_INSTALL.md)。
 
@@ -6,7 +6,7 @@
 
 准备一只可清空的备用 U 盘，一台有 HDMI 输入的电视或显示器，以及 USB 键盘和网线。原厂启动顺序的盒子还需要 USB 转 TTL 串口适配器，用于进入 U-Boot。
 
-从同一个发布页下载 `.img.gz` 和 `SHA256SUMS`。[v0.4.2 发布页](https://github.com/Zlion-Y/w152d-armbian/releases/tag/v0.4.2)
+从同一个发布页下载 `.img.gz` 和 `SHA256SUMS`。[v0.4.3 发布页](https://github.com/Zlion-Y/w152d-armbian/releases/tag/v0.4.3)
 
 Linux 在下载目录运行：
 
@@ -18,7 +18,7 @@ Windows PowerShell 在下载目录运行下面的命令，比较两行开头的 
 
 ```powershell
 Get-Content .\SHA256SUMS
-(Get-FileHash .\Armbian_W152D_Bookworm_6.12.119_v0.4.2.img.gz -Algorithm SHA256).Hash.ToLowerInvariant()
+(Get-FileHash .\Armbian_W152D_Bookworm_6.12.119_v0.4.3.img.gz -Algorithm SHA256).Hash.ToLowerInvariant()
 ```
 
 1. 校验通过后解压 `.img.gz`，得到 `.img`。
@@ -63,7 +63,7 @@ tr ' ' '\n' </proc/cmdline | grep '^w152d\.hdmi_handoff='
 ls -l /dev/fb0 /dev/dri/renderD128
 ```
 
-v0.4.2 使用 `6.12.119-ophub`。只插一只启动盘时，常见结果为 `/dev/sda2` 挂载 ext4 根分区，`/dev/sda1` 挂载 FAT32 `/boot`。例如 `w152d.hdmi_handoff=edid-2160p60hz` 表示固件选择了 4K60，实际输出可在电视的信号信息页确认。控制台缓冲区使用 1080p，实测 4K 电视的文字显示比例正常。`renderD128` 用于确认 Lima 渲染节点已注册。
+v0.4.3 使用 `6.12.119-ophub`。只插一只启动盘时，常见结果为 `/dev/sda2` 挂载 ext4 根分区，`/dev/sda1` 挂载 FAT32 `/boot`。例如 `w152d.hdmi_handoff=edid-2160p60hz` 表示固件选择了 4K60，实际输出可在电视的信号信息页确认。控制台缓冲区使用 1080p，实测 4K 电视的文字显示比例正常。`renderD128` 用于确认 Lima 渲染节点已注册。
 
 ## 5. 常见问题和恢复
 
