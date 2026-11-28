@@ -158,6 +158,8 @@ printf 'softdep lima pre: governor_simpleondemand w152d_gpu_clk w152d_drm\n' > "
 printf 'w152d_dt_overlay\nw152d_gpu_clk\nw152d_drm\nlima\n' > "$root/etc/modules-load.d/w152d-gpu-hdmi.conf"
 printf 'w152d_thermal\n' > "$root/etc/modules-load.d/w152d-thermal.conf"
 printf 'w152d_cpufreq\n' > "$root/etc/modules-load.d/w152d-cpufreq.conf"
+install -d "$root/etc/sysfs.d"
+printf 'devices/system/cpu/cpufreq/policy0/scaling_min_freq = 500000\n' > "$root/etc/sysfs.d/50-w152d-cpufreq.conf"
 cat > "$root/etc/unisoc_cp2log_config.txt" <<'CP2'
 wcn_cp2_log_limit_size=1M;
 wcn_cp2_file_max_num=1;

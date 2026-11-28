@@ -13,6 +13,16 @@
 
 升频前先抬高电压，降频后再降压。每个 PWM 步骤都核对硬件寄存器读回，时钟切换也核对固件读回。卸载时恢复 CPU 1704 MHz、DSU 1368 MHz 和启动 PWM。sysfs 的 `vddcpu_nominal_uv` 显示当前读回匹配的 OPP 标称电压。电压值来自原厂 PWM 表。
 
+## 服务器镜像默认策略
+
+镜像默认使用 `schedutil`，运行范围为 500–2016 MHz。500 MHz 与 100、250 MHz 使用相同的 779 mV 标称电压，为空闲后处理短请求留出性能余量。驱动仍向 Linux 提供原厂的 13 个频点。
+
+底包的 `armbian-hardware-optimize.service` 从频点列表取第 `NF/2` 项作为下限，W152D 对应 1200 MHz。该服务在首次设置后会停用。镜像使用持续启用的 `sysfsutils`，在调频模块加载后读取 `/etc/sysfs.d/50-w152d-cpufreq.conf`。管理员可编辑该文件的频率（单位 kHz）并重启，通过 `/sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq` 确认生效。
+
+在已完成首次设置的 USB 系统上重启，实测下限为 500 MHz，四核负载升至 2016 MHz，停载后回到 500 MHz。
+
+向 Linux 主线移植时，板级支持涉及安全固件时钟、VDDCPU 和芯片分档的频率电压表。500 MHz 是 Armbian 镜像的运行策略，配置位于用户空间。
+
 ## 实机验证
 
 在 USB 启动的 `6.12.119-ophub` 上逐档验证表 2 的 13 个 CPU 频点，以及 100 MHz 和 2016 MHz 的直接往返。重启后首次加载全频段模块，默认 `schedutil` 在 60 秒四核负载下升至 2016 MHz，温度采样最高 44.3°C。负载期间 USB 直读通过，停载后自动降档，空闲统计最低到 250 MHz。
