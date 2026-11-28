@@ -94,9 +94,9 @@ if [[ -n $kernel_bundle ]]; then
     tar -xzf "$kernel_bundle" -C "$work/kernel"
     driver=$work/kernel/driver
     cp -a "$work/kernel/modules/$release" "$root/usr/lib/modules/"
-    headers=$root/usr/src/linux-headers-$release
-    mkdir "$headers"
-    tar -xzf "$work/kernel/header-$release.tar.gz" -C "$headers"
+    target_headers=$root/usr/src/linux-headers-$release
+    mkdir "$target_headers"
+    tar -xzf "$work/kernel/header-$release.tar.gz" -C "$target_headers"
     ln -sfn "/usr/src/linux-headers-$release" "$root/usr/lib/modules/$release/build"
     install -m 0644 "$work/kernel/boot/vmlinuz-$release" "$boot/zImage"
     install -m 0644 "$work/kernel/boot/uInitrd-$release" "$boot/uInitrd"
@@ -107,26 +107,36 @@ if [[ -n $kernel_bundle ]]; then
     dtc -@ -I dts -O dtb -o "$work/emmc-hs200.dtbo" "$repo/gpu-hdmi-driver/meson-gxlx4-w152d-emmc-hs200.dtso"
     fdtoverlay -i "$driver/meson-gxlx4-w152d-emmc.dtb" -o "$work/emmc-hs200.dtb" "$work/emmc-hs200.dtbo"
     install -m 0644 "$work/emmc-hs200.dtb" "$driver/meson-gxlx4-w152d-emmc.dtb"
-else
-    headers=$work/headers
-    cp -a "$root/usr/src/linux-headers-$release" "$headers"
-    cp -- "$repo"/gpu-hdmi-driver/{Makefile,gcc-wrap.sh,*.c,*.dts} "$driver/"
+fi
 
-    # Rebuild the packaged ARM64 host tools for the Linux build host.
-    (
-        cd "$headers"
-        gcc -O2 -I scripts/include -o scripts/basic/fixdep scripts/basic/fixdep.c
-        gcc -O2 -I scripts/include -I scripts/mod -o scripts/mod/modpost \
-            scripts/mod/{modpost,file2alias,sumversion,symsearch}.c
-    )
+headers=$work/headers
+cp -a "$root/usr/src/linux-headers-$release" "$headers"
+
+# Use host-native tools for module builds and retain the original target headers.
+(
+    cd "$headers"
+    gcc -O2 -I scripts/include -o scripts/basic/fixdep scripts/basic/fixdep.c
+    gcc -O2 -I scripts/include -I scripts/mod -o scripts/mod/modpost \
+        scripts/mod/{modpost,file2alias,sumversion,symsearch}.c
+)
+if [[ -z $kernel_bundle ]]; then
+    cp -- "$repo"/gpu-hdmi-driver/{Makefile,gcc-wrap.sh,*.c,*.dts} "$driver/"
     make -C "$driver" -j"${JOBS:-4}" KDIR="$headers" \
         ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}" all
 fi
 
+thermal=$work/thermal
+mkdir "$thermal"
+cp -- "$repo"/thermal-driver/{Makefile,w152d_thermal.c} "$thermal/"
+install -m 0755 "$repo/gpu-hdmi-driver/gcc-wrap.sh" "$thermal/gcc-wrap.sh"
+make -C "$thermal" -j"${JOBS:-4}" KDIR="$headers" \
+    ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}" \
+    CC="$thermal/gcc-wrap.sh"
+
 modules=$root/usr/lib/modules/$release
 install -d "$modules/extra"
-for name in w152d_dt_overlay w152d_gpu_clk w152d_drm; do
-    module=$driver/$name.ko
+for module in "$driver"/{w152d_dt_overlay,w152d_gpu_clk,w152d_drm}.ko "$thermal/w152d_thermal.ko"; do
+    name=$(basename "$module" .ko)
     read -r vermagic < <(modinfo -F vermagic "$module")
     printf '%s vermagic: %s\n' "$name" "$vermagic"
     [[ $vermagic == "$release SMP preempt mod_unload aarch64" ]]
@@ -135,6 +145,7 @@ done
 depmod -b "$root" "$release"
 printf 'softdep lima pre: governor_simpleondemand w152d_gpu_clk w152d_drm\n' > "$root/etc/modprobe.d/w152d-gpu-hdmi.conf"
 printf 'w152d_dt_overlay\nw152d_gpu_clk\nw152d_drm\nlima\n' > "$root/etc/modules-load.d/w152d-gpu-hdmi.conf"
+printf 'w152d_thermal\n' > "$root/etc/modules-load.d/w152d-thermal.conf"
 cat > "$root/etc/unisoc_cp2log_config.txt" <<'CP2'
 wcn_cp2_log_limit_size=1M;
 wcn_cp2_file_max_num=1;
